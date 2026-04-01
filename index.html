@@ -71,6 +71,11 @@
             <span class="btn-text">FLASHCARD<br><small>Flip Cards</small></span>
             <span class="btn-arrow">▶</span>
           </button>
+          <button class="menu-btn btn-stats" onclick="showScreen('screen-stats')">
+            <span class="btn-icon">📊</span>
+            <span class="btn-text">LEARNING STATS<br><small>Progress tracking</small></span>
+            <span class="btn-arrow">▶</span>
+          </button>
           <button class="menu-btn btn-settings" onclick="showScreen('screen-settings')">
             <span class="btn-icon">⚙️</span>
             <span class="btn-text">SETTINGS<br><small>Settings</small></span>
@@ -184,6 +189,7 @@
           <h3>Game 4 - MATCH</h3>
           <label class="setting-row"><span>Time limit</span>
             <select id="match-time-limit" class="setting-select" onchange="updateSettingsFromUI()">
+              <option value="15">15 seconds</option>
               <option value="30">30 seconds</option>
               <option value="45">45 seconds</option>
               <option value="60">60 seconds</option>
@@ -235,6 +241,35 @@
           </div>
         </div>
       </div>
+      <button class="back-btn" onclick="showScreen('screen-menu')">◀ BACK TO MENU</button>
+    </div>
+  </div>
+
+  <!-- STATS / PROGRESS TRACKING -->
+  <div id="screen-stats" class="screen">
+    <div class="panel panel-stats">
+      <h2 class="panel-title">📊 LEARNING STATS</h2>
+      
+      <div class="stats-section">
+        <h3 class="stats-section-title">📈 Overview</h3>
+        <div id="stats-summary"></div>
+      </div>
+      
+      <div class="stats-section">
+        <h3 class="stats-section-title">🎮 Stats by Game Mode</h3>
+        <div id="stats-game-types"></div>
+      </div>
+      
+      <div class="stats-section">
+        <h3 class="stats-section-title">📚 Mastery Level</h3>
+        <div id="stats-mastery"></div>
+      </div>
+      
+      <div class="stats-section">
+        <h3 class="stats-section-title">📝 Session History</h3>
+        <div id="stats-history"></div>
+      </div>
+      
       <button class="back-btn" onclick="showScreen('screen-menu')">◀ BACK TO MENU</button>
     </div>
   </div>

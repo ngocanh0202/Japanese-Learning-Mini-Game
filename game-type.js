@@ -239,6 +239,7 @@ function updateTypeHUD() {
 function gameOverTyping(score, combo) {
   cancelAnimationFrame(typingLoop);
   typingLoop = null;
+  saveToStorage();
   gameOver(score, combo, 'type');
 }
 

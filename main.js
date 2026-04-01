@@ -37,6 +37,7 @@ let settings = {
   }
 };
 let questionStats = {};
+let currentScreen = '';
 
 /* ── INIT ── */
 function adjustZoom() {
@@ -103,6 +104,8 @@ function initStars() {
    SCREEN MANAGEMENT
 ══════════════════════════════════════════════ */
 function showScreen(id) {
+  const prevScreen = currentScreen;
+  currentScreen = id;
   document.querySelectorAll('.screen').forEach(s => {
     s.classList.remove('active');
     s.style.display = 'none';
@@ -110,12 +113,16 @@ function showScreen(id) {
   const el = document.getElementById(id);
   el.style.display = 'flex';
   el.classList.add('active');
+  if (prevScreen === 'screen-match' && id !== 'screen-match') {
+    if (typeof stopMatchTimer === 'function') stopMatchTimer();
+  }
   if (id === 'screen-data') {
     refreshQuestionSetUI();
     refreshDataPreview();
   }
   if (id === 'screen-menu') updateMenuUI();
   if (id === 'screen-settings') renderSettingsScreen();
+  if (id === 'screen-stats') renderStatsScreen();
 }
 
 /* ══════════════════════════════════════════════
@@ -261,7 +268,7 @@ function initQuestionStats(questionsArr) {
     }
     gameTypes.forEach(game => {
       if (!questionStats[id][game]) {
-        questionStats[id][game] = { incorrect: 0, lastSeen: null, correctStreak: 0 };
+        questionStats[id][game] = { incorrect: 0, correctCount: 0, totalAttempts: 0, lastSeen: null, correctStreak: 0 };
       }
     });
   });
@@ -380,20 +387,58 @@ function updateQuestionStats(questionIndex, gameType, isCorrect) {
     questionStats[id] = {};
   }
   if (!questionStats[id][gameType]) {
-    questionStats[id][gameType] = { incorrect: 0, lastSeen: null, correctStreak: 0 };
+    questionStats[id][gameType] = { incorrect: 0, correctCount: 0, totalAttempts: 0, lastSeen: null, correctStreak: 0 };
   }
   
   const stats = questionStats[id][gameType];
   stats.lastSeen = new Date().toISOString();
+  stats.totalAttempts = (stats.totalAttempts || 0) + 1;
   
   if (isCorrect) {
     stats.correctStreak = (stats.correctStreak || 0) + 1;
+    stats.correctCount = (stats.correctCount || 0) + 1;
   } else {
     stats.incorrect = (stats.incorrect || 0) + 1;
     stats.correctStreak = 0;
   }
   
   saveQuestionStats();
+}
+
+function computeGameTypeStats() {
+  const gameTypes = ['quiz', 'listen', 'flash', 'match', 'type'];
+  const result = {};
+  for (const t of gameTypes) {
+    result[t] = { correct: 0, wrong: 0 };
+  }
+  
+  questions.forEach((q, index) => {
+    const id = `q-${index}`;
+    const stats = questionStats[id];
+    if (!stats) return;
+    
+    for (const gameType of gameTypes) {
+      const typeStats = stats[gameType];
+      if (!typeStats) continue;
+      result[gameType].correct += typeStats.correctCount || 0;
+      result[gameType].wrong += typeStats.incorrect || 0;
+    }
+  });
+  
+  return result;
+}
+
+function computeTotalStats() {
+  const gameTypeStats = computeGameTypeStats();
+  let totalCorrect = 0;
+  let totalWrong = 0;
+  
+  for (const t of Object.values(gameTypeStats)) {
+    totalCorrect += t.correct;
+    totalWrong += t.wrong;
+  }
+  
+  return { totalCorrect, totalWrong, gameTypeStats };
 }
 
 function createQuestionSet(name, items = []) {
@@ -1090,4 +1135,163 @@ function saveGamePrioritySettings() {
   }
   
   saveSettingsToStorage();
+}
+
+function renderStatsScreen() {
+  const { totalCorrect, totalWrong, gameTypeStats } = computeTotalStats();
+  const totalAnswers = totalCorrect + totalWrong;
+  const overallAccuracy = totalAnswers > 0 ? Math.round((totalCorrect / totalAnswers) * 100) : 0;
+  
+  const gameNames = { quiz: '📝 Quiz', listen: '🎧 Listening', flash: '🃏 Flashcard', match: '🧩 Match', type: '⌨ Falling Words' };
+  const gameColors = { quiz: '#0a84ff', listen: '#ff00c8', flash: '#bf5af2', match: '#ffd60a', type: '#ff2d55' };
+  
+  let gameTypeRows = '';
+  for (const type of ['quiz', 'listen', 'flash', 'match', 'type']) {
+    const stats = gameTypeStats[type] || { correct: 0, wrong: 0 };
+    const typeTotal = stats.correct + stats.wrong;
+    const typeAccuracy = typeTotal > 0 ? Math.round((stats.correct / typeTotal) * 100) : 0;
+    const color = gameColors[type];
+    
+    gameTypeRows += `
+      <tr>
+        <td style="color: ${color}">${gameNames[type]}</td>
+        <td style="color: #30d158">${stats.correct}</td>
+        <td style="color: #ff2d55">${stats.wrong}</td>
+        <td>${typeTotal}</td>
+        <td>
+          <div class="stats-accuracy-bar">
+            <div class="stats-accuracy-fill" style="width: ${typeAccuracy}%; background: ${color}"></div>
+          </div>
+          <span class="stats-accuracy-text">${typeAccuracy}%</span>
+        </td>
+      </tr>`;
+  }
+  
+  const historyEl = document.getElementById('stats-history');
+  if (historyEl) {
+    historyEl.innerHTML = '<div class="stats-empty">No sessions recorded yet.</div>';
+  }
+  
+  const summaryEl = document.getElementById('stats-summary');
+  if (summaryEl) {
+    summaryEl.innerHTML = `
+      <div class="stats-summary-grid">
+        <div class="stats-summary-card">
+          <div class="stats-summary-label">Total Answers</div>
+          <div class="stats-summary-value">${totalAnswers}</div>
+        </div>
+        <div class="stats-summary-card stats-card-correct">
+          <div class="stats-summary-label">Correct</div>
+          <div class="stats-summary-value" style="color: #30d158">${totalCorrect}</div>
+        </div>
+        <div class="stats-summary-card stats-card-wrong">
+          <div class="stats-summary-label">Wrong</div>
+          <div class="stats-summary-value" style="color: #ff2d55">${totalWrong}</div>
+        </div>
+        <div class="stats-summary-card stats-card-accuracy">
+          <div class="stats-summary-label">Accuracy Rate</div>
+          <div class="stats-summary-value" style="color: ${overallAccuracy >= 80 ? '#30d158' : overallAccuracy >= 50 ? '#ffd60a' : '#ff2d55'}">${overallAccuracy}%</div>
+          <div class="stats-accuracy-bar stats-summary-bar">
+            <div class="stats-accuracy-fill" style="width: ${overallAccuracy}%; background: ${overallAccuracy >= 80 ? '#30d158' : overallAccuracy >= 50 ? '#ffd60a' : '#ff2d55'}"></div>
+          </div>
+        </div>
+        <div class="stats-summary-card">
+          <div class="stats-summary-label">Level</div>
+          <div class="stats-summary-value">🔰 ${playerLevel}</div>
+        </div>
+        <div class="stats-summary-card">
+          <div class="stats-summary-label">Best Combo</div>
+          <div class="stats-summary-value">🔥 ${playerCombo}x</div>
+        </div>
+        <div class="stats-summary-card">
+          <div class="stats-summary-label">Sessions Played</div>
+          <div class="stats-summary-value">0</div>
+        </div>
+        <div class="stats-summary-card">
+          <div class="stats-summary-label">Current EXP</div>
+          <div class="stats-summary-value">⭐ ${playerEXP}/${XP_PER_LEVEL}</div>
+        </div>
+      </div>`;
+  }
+  
+  const tableEl = document.getElementById('stats-game-types');
+  if (tableEl) {
+    tableEl.innerHTML = `
+      <div class="table-scroll">
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th>Game Mode</th>
+              <th>Correct</th>
+              <th>Wrong</th>
+              <th>Total</th>
+              <th>Accuracy</th>
+            </tr>
+          </thead>
+          <tbody>${gameTypeRows}</tbody>
+        </table>
+      </div>`;
+  }
+  
+  const masteryEl = document.getElementById('stats-mastery');
+  if (masteryEl) {
+    let mastered = 0, learning = 0, newItems = 0;
+    const gameTypes = ['quiz', 'listen', 'flash', 'match', 'type'];
+    
+    questions.forEach((q, index) => {
+      const id = `q-${index}`;
+      const stats = questionStats[id];
+      if (!stats) {
+        newItems++;
+        return;
+      }
+      
+      let isMastered = true;
+      let hasAnyAttempts = false;
+      
+      for (const gameType of gameTypes) {
+        const typeStats = stats[gameType];
+        if (typeStats && typeStats.totalAttempts > 0) {
+          hasAnyAttempts = true;
+          const typeAccuracy = typeStats.correctCount / typeStats.totalAttempts;
+          if (typeAccuracy < 0.8 || typeStats.incorrect > 3) {
+            isMastered = false;
+          }
+        }
+      }
+      
+      if (hasAnyAttempts) {
+        if (isMastered) {
+          mastered++;
+        } else {
+          learning++;
+        }
+      } else {
+        newItems++;
+      }
+    });
+    
+    const totalQ = questions.length || 1;
+    masteryEl.innerHTML = `
+      <div class="stats-mastery-grid">
+        <div class="stats-mastery-item">
+          <div class="mastery-circle mastery-mastered" style="--progress: ${Math.round((mastered / totalQ) * 100)}">
+            <span>${mastered}</span>
+          </div>
+          <div class="mastery-label">Mastered</div>
+        </div>
+        <div class="stats-mastery-item">
+          <div class="mastery-circle mastery-learning" style="--progress: ${Math.round((learning / totalQ) * 100)}">
+            <span>${learning}</span>
+          </div>
+          <div class="mastery-label">Learning</div>
+        </div>
+        <div class="stats-mastery-item">
+          <div class="mastery-circle mastery-new" style="--progress: ${Math.round((newItems / totalQ) * 100)}">
+            <span>${newItems}</span>
+          </div>
+          <div class="mastery-label">New</div>
+        </div>
+      </div>`;
+  }
 }
