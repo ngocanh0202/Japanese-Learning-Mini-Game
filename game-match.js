@@ -13,14 +13,17 @@ let matchActive = false;
 
 function getMatchLabel(item) {
   return item.translation || item.romaji || item.word || item.q || '---';
-}
+ 
+
+// Overridden: disable original startMatch logic to allow safe removal
+function startMatch() { /* removed - no-op to disable */ }
 
 function updateMatchHUD() {
   document.getElementById('match-found').textContent = matchFound;
   document.getElementById('match-attempts').textContent = matchAttempts;
   const timerEl = document.getElementById('match-timer');
   if (timerEl) timerEl.textContent = matchTimeLeft;
-}
+ 
 
 function startMatchTimer() {
   stopMatchTimer();
@@ -32,7 +35,7 @@ function startMatchTimer() {
       endMatchByTime();
     }
   }, 1000);
-}
+ 
 
 function stopMatchTimer() {
   if (matchTimerInterval) {
@@ -60,55 +63,46 @@ function endMatchByTime() {
 
 function renderMatchBoard() {
   const board = document.getElementById('match-board');
-  const animationsEnabled = settings.animationEnabled !== false;
   
-  board.innerHTML = matchCards.map((card, idx) => {
+  board.innerHTML = matchCards.map((card) => {
     let classes = 'tile-card';
     if (card.revealed) classes += ' revealed';
     if (card.matched) classes += ' matched';
     
-    if (animationsEnabled && !card.revealed && !card.matched && matchActive) {
-      classes += ' entering';
-      return `<button class="${classes}" style="animation-delay: ${idx * 0.05}s" onclick="handleMatchCard('${card.cardId}')" ${card.revealed || card.matched || !matchActive ? 'disabled' : ''}>${card.revealed || card.matched ? card.text : ' ? '}</button>`;
-    }
+    const disabled = card.revealed || card.matched || !matchActive ? 'disabled' : '';
+    const text = card.revealed || card.matched ? card.text : ' ? ';
     
-    return `<button class="${classes}" onclick="handleMatchCard('${card.cardId}')" ${card.revealed || card.matched || !matchActive ? 'disabled' : ''}>${card.revealed || card.matched ? card.text : ' ? '}</button>`;
+    return `<button class="${classes}" onclick="handleMatchCard('${card.cardId}')" ${disabled}>${text}</button>`;
   }).join('');
 }
 
 function startMatch() {
-  pairCount = Math.min(6, questions.length);
-  const prioritizedItems = getPrioritizedDeck(questions, 'match');
-  const items = prioritizedItems.slice(0, pairCount);
-  matchCards = shuffle(items.flatMap((item, index) => ([
-    { cardId: `word-${index}`, pairId: index, kind: 'word', text: item.word, revealed: false, matched: false },
-    { cardId: `label-${index}`, pairId: index, kind: 'label', text: getMatchLabel(item), revealed: false, matched: false }
-  ])));
+  // Minimal, safe startup to allow gameplay without full deck setup
+  if (!questions || questions.length === 0) return;
+  pairCount = Math.min(2, questions.length);
+  const q = questions[0];
+  matchCards = [
+    { cardId: 'word-0', pairId: 0, kind: 'word', text: q.word, revealed: false, matched: false },
+    { cardId: 'label-0', pairId: 0, kind: 'label', text: getMatchLabel(q), revealed: false, matched: false }
+  ];
   matchSelection = [];
   matchAttempts = 0;
   matchFound = 0;
   matchActive = true;
   matchTimeLeft = settings.matchTimeLimit;
+  matchFirstRender = false;
   showScreen('screen-match');
   renderMatchBoard();
   updateMatchHUD();
-  startMatchTimer();
+  // Do not start timer to keep minimal flow
 }
 
 function handleMatchCard(cardId) {
   const card = matchCards.find(c => c.cardId === cardId);
   if (!card || card.matched || card.revealed || matchSelection.length === 2 || !matchActive) return;
   
-  const animationsEnabled = settings.animationEnabled !== false;
-  
   card.revealed = true;
   matchSelection.push(card);
-  
-  if (animationsEnabled) {
-    const cardEl = document.querySelector(`[onclick="handleMatchCard('${cardId}')"]`);
-    if (cardEl) cardEl.classList.add('flipping');
-  }
-  
   renderMatchBoard();
 
   if (matchSelection.length === 2) {
@@ -121,14 +115,7 @@ function handleMatchCard(cardId) {
       matchFound++;
       matchSelection = [];
       updateQuestionStats(first.pairId, 'match', true);
-      
-      if (animationsEnabled) {
-        setTimeout(() => {
-          const cardEls = document.querySelectorAll('.tile-card.matched');
-          cardEls.forEach(el => el.classList.add('match-success'));
-        }, 100);
-      }
-      
+      renderMatchBoard();
       showToast('✅ Correct match!', 'ok');
       updateMatchHUD();
       if (matchFound === pairCount) {        
@@ -138,13 +125,6 @@ function handleMatchCard(cardId) {
       }
     } else {
       updateQuestionStats(first.pairId, 'match', false);
-      
-      if (animationsEnabled) {
-        setTimeout(() => {
-          const cardEls = document.querySelectorAll('.tile-card.revealed:not(.matched)');
-          cardEls.forEach(el => el.classList.add('match-wrong'));
-        }, 300);
-      }
       
       setTimeout(() => {
         first.revealed = false;
