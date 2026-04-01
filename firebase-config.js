@@ -4,6 +4,7 @@
 
 let firebaseApp = null;
 let firebaseDb = null;
+let firestoreInitialized = false;
 
 function initializeFirebase(config) {
   if (!config || !config.projectId) {
@@ -29,11 +30,49 @@ function initializeFirebase(config) {
     
     // Initialize Firestore
     firebaseDb = firebase.firestore();
+    
+    // Enable offline persistence (if not already done)
+    // Note: In compat SDK, use enablePersistence with indexedDbPersistence
+    if (!firestoreInitialized && firebaseDb.enablePersistence) {
+      firebaseDb.enablePersistence({ synchronize: true })
+        .then(() => {
+          console.log('Firestore persistence enabled');
+        })
+        .catch(err => {
+          if (err.code === 'failed-precondition') {
+            console.log('Persistence failed: multiple tabs open');
+          } else if (err.code === 'unimplemented') {
+            console.log('Persistence not available in this browser');
+          }
+        });
+      firestoreInitialized = true;
+    }
+    
     return true;
   } catch (e) {
     console.error("Firebase initialization error:", e);
     return false;
   }
+}
+
+async function ensureNetwork() {
+  if (!firebaseDb) {
+    const config = loadFirebaseConfig();
+    if (config && config.projectId) {
+      initializeFirebase(config);
+    }
+  }
+  
+  if (firebaseDb) {
+    try {
+      await firebaseDb.enableNetwork();
+      return true;
+    } catch (e) {
+      console.error('Failed to enable network:', e);
+      return false;
+    }
+  }
+  return false;
 }
 
 function getFirestore() {
@@ -50,4 +89,8 @@ function getFirestoreCollection(collectionName) {
   const db = getFirestore();
   if (!db) return null;
   return db.collection(collectionName);
+}
+
+function isOnline() {
+  return navigator.onLine;
 }

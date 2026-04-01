@@ -590,6 +590,62 @@ textarea:focus { outline: none; border-color: var(--accent4); }
   flex-wrap: wrap;
 }
 
+.firebase-sets-list {
+  max-height: 400px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.firebase-set-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.firebase-set-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.firebase-set-name {
+  font-family: var(--font-jp);
+  font-size: 14px;
+  color: var(--text);
+}
+
+.firebase-set-count {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.firebase-set-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-sm {
+  padding: 6px 10px;
+  font-size: 11px;
+}
+
+.loading, .empty-message, .error-message {
+  text-align: center;
+  padding: 20px;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.error-message {
+  color: var(--accent);
+}
+
 .status-msg { font-size: 12px; min-height: 20px; }
 .status-ok   { color: var(--accent3); }
 .status-err  { color: var(--accent); }
@@ -810,13 +866,16 @@ textarea:focus { outline: none; border-color: var(--accent4); }
 /* ─── FLASHCARD GAME ────────────────────────────── */
 #screen-flash { align-items: center; }
 .flash-container {
-  width: 100%; max-width: 500px;
+  flex: 1;
+  width: 100%;
   display: flex; flex-direction: column; align-items: center;
   gap: 20px;
 }
 
 .card-scene {
-  width: 100%; height: 260px;
+  flex: 1;
+  width: 100%;
+  min-height: 200px; max-height: 450px;
   perspective: 900px;
   cursor: pointer;
 }
@@ -1059,7 +1118,7 @@ textarea:focus { outline: none; border-color: var(--accent4); }
   .screen { padding: 12px; }
   .menu-container { padding-top: 18px; }
   .choices-grid { grid-template-columns: 1fr; }
-  .card-scene { height: 200px; }
+  .card-scene { min-height: 200px; }
   .type-container { gap: 12px; }
   .type-input-wrap { flex-direction: column; align-items: stretch; }
   .type-input-wrap > * { width: 100%; width: 100%; }
@@ -1089,6 +1148,15 @@ textarea:focus { outline: none; border-color: var(--accent4); }
   .tile-grid { width: 100%; }
   .tile-card { min-height: 90px; }
   .hud-back { padding: 6px 10px; }
+}
+
+@media (min-width: 769px) {
+  .flash-container {
+    max-width: 550px;
+  }
+  .card-scene {
+    max-height: 380px;
+  }
 }
 
 .menu-btn-container {

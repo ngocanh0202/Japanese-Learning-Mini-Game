@@ -62,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const firebaseConfig = loadFirebaseConfig();
   if (firebaseConfig) {
     initializeFirebase(firebaseConfig);
+    showFirebaseSetsButton(true);
   }
   
   updateMenuUI();
@@ -126,7 +127,6 @@ function showScreen(id) {
   if (id === 'screen-data') {
     refreshQuestionSetUI();
     refreshDataPreview();
-    updateCopyButtonState();
   }
   if (id === 'screen-menu') updateMenuUI();
   if (id === 'screen-settings') renderSettingsScreen();
@@ -677,6 +677,176 @@ function closeImportModal() {
   if (replaceBtn) replaceBtn.classList.remove('hidden');
   if (appendBtn) appendBtn.classList.remove('hidden');
   if (editBtn) editBtn.classList.add('hidden');
+}
+
+function closeFirebaseSetsModal() {
+  const modal = document.getElementById('firebase-sets-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function showFirebaseSetsModal() {
+  const config = loadFirebaseConfig();
+  if (!config || !config.projectId) {
+    showToast('❌ Please configure Firebase first', 'err');
+    toggleFirebaseConfig();
+    return;
+  }
+
+  if (!isOnline()) {
+    showToast('❌ No internet connection', 'err');
+    return;
+  }
+
+  const listEl = document.getElementById('firebase-sets-list');
+  if (!listEl) return;
+  
+  listEl.innerHTML = '<div class="loading">Loading...</div>';
+  
+  const modal = document.getElementById('firebase-sets-modal');
+  if (modal) modal.classList.remove('hidden');
+
+  try {
+    const initialized = initializeFirebase(config);
+    if (!initialized) throw new Error('Failed to initialize Firebase');
+
+    const networkEnabled = await ensureNetwork();
+    if (!networkEnabled) throw new Error('Cannot connect to Firebase');
+
+    const db = getFirestore();
+    const snapshot = await db.collection('question-sets').get();
+    
+    if (snapshot.empty) {
+      listEl.innerHTML = '<div class="empty-message">No question sets in Firebase</div>';
+      return;
+    }
+
+    const sets = [];
+    snapshot.forEach(doc => {
+      sets.push({ id: doc.id, ...doc.data() });
+    });
+
+    renderFirebaseSetsList(sets);
+  } catch (e) {
+    console.error('Error fetching Firebase sets:', e);
+    listEl.innerHTML = `<div class="error-message">Error: ${escapeHtml(e.message)}</div>`;
+    showToast(`❌ ${e.message}`, 'err');
+  }
+}
+
+function renderFirebaseSetsList(sets) {
+  const listEl = document.getElementById('firebase-sets-list');
+  if (!listEl) return;
+
+  const activeSet = getActiveQuestionSet();
+  const activeFirestoreId = activeSet ? activeSet.firestoreId : null;
+
+  listEl.innerHTML = sets.map(set => `
+    <div class="firebase-set-item">
+      <div class="firebase-set-info">
+        <div class="firebase-set-name">${escapeHtml(set.name || 'Untitled')}</div>
+        <div class="firebase-set-count">${set.questions ? set.questions.length : 0} questions</div>
+      </div>
+      <div class="firebase-set-actions">
+        <button class="action-btn btn-secondary btn-sm" onclick="copyFirebaseSetUrl('${escapeHtml(set.id)}')">📋 URL</button>
+        <button class="action-btn btn-sm" onclick="importFirebaseSet('${escapeHtml(set.id)}')">📥 Import</button>
+        <button class="action-btn btn-danger btn-sm" onclick="deleteFirebaseSet('${escapeHtml(set.id)}')">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function copyFirebaseSetUrl(docId) {
+  const config = loadFirebaseConfig();
+  if (!config || !config.projectId) return;
+  
+  const url = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/(default)/documents/question-sets/${docId}`;
+  navigator.clipboard.writeText(url).then(() => {
+    showToast('✅ URL copied to clipboard', 'ok');
+  }).catch(() => {
+    showToast('❌ Failed to copy URL', 'err');
+  });
+}
+
+async function importFirebaseSet(docId) {
+  const config = loadFirebaseConfig();
+  if (!config || !config.projectId) {
+    showToast('❌ Firebase not configured', 'err');
+    return;
+  }
+
+  if (!isOnline()) {
+    showToast('❌ No internet connection', 'err');
+    return;
+  }
+
+  try {
+    const initialized = initializeFirebase(config);
+    if (!initialized) throw new Error('Failed to initialize Firebase');
+
+    const networkEnabled = await ensureNetwork();
+    if (!networkEnabled) throw new Error('Cannot connect to Firebase');
+
+    const db = getFirestore();
+    const doc = await db.collection('question-sets').doc(docId).get();
+    
+    if (!doc.exists) {
+      throw new Error('Document not found');
+    }
+
+    const data = doc.data();
+    
+    const newSet = {
+      name: (data.name || 'Imported Set') + ' (Firebase)',
+      questions: data.questions || [],
+      createdAt: new Date().toISOString()
+    };
+
+    questionSets.push(newSet);
+    activeSetId = questionSets.length - 1;
+    questions = newSet.questions;
+    saveQuestionSetsToStorage();
+    refreshQuestionSetUI();
+    
+    closeFirebaseSetsModal();
+    showToast(`✅ Imported "${newSet.name}"`, 'ok');
+  } catch (e) {
+    console.error('Error importing Firebase set:', e);
+    showToast(`❌ ${e.message}`, 'err');
+  }
+}
+
+async function deleteFirebaseSet(docId) {
+  if (!confirm('Are you sure you want to delete this set from Firebase?')) {
+    return;
+  }
+
+  const config = loadFirebaseConfig();
+  if (!config || !config.projectId) {
+    showToast('❌ Firebase not configured', 'err');
+    return;
+  }
+
+  if (!isOnline()) {
+    showToast('❌ No internet connection', 'err');
+    return;
+  }
+
+  try {
+    const initialized = initializeFirebase(config);
+    if (!initialized) throw new Error('Failed to initialize Firebase');
+
+    const networkEnabled = await ensureNetwork();
+    if (!networkEnabled) throw new Error('Cannot connect to Firebase');
+
+    const db = getFirestore();
+    await db.collection('question-sets').doc(docId).delete();
+
+    showToast('✅ Deleted from Firebase', 'ok');
+    showFirebaseSetsModal();
+  } catch (e) {
+    console.error('Error deleting Firebase set:', e);
+    showToast(`❌ ${e.message}`, 'err');
+  }
 }
 
 function parseImportPayload(raw) {
@@ -1352,8 +1522,20 @@ function saveFirebaseConfig() {
   if (initialized) {
     showToast('✅ Firebase config saved!', 'ok');
     document.getElementById('firebase-config-panel').classList.add('hidden');
+    showFirebaseSetsButton(true);
   } else {
     showToast('❌ Failed to initialize Firebase', 'err');
+  }
+}
+
+function showFirebaseSetsButton(show) {
+  const btn = document.getElementById('btn-firebase-sets');
+  if (btn) {
+    if (show) {
+      btn.classList.remove('hidden');
+    } else {
+      btn.classList.add('hidden');
+    }
   }
 }
 
@@ -1425,6 +1607,11 @@ async function backupQuestionSet() {
     return;
   }
 
+  if (!isOnline()) {
+    showToast('❌ No internet connection. Please check your network.', 'err');
+    return;
+  }
+
   const activeSet = getActiveQuestionSet();
   if (!activeSet || !activeSet.questions || activeSet.questions.length === 0) {
     showToast('❌ Cannot backup empty question set', 'err');
@@ -1437,36 +1624,29 @@ async function backupQuestionSet() {
       throw new Error('Failed to initialize Firebase');
     }
 
+    // Ensure network is enabled
+    const networkEnabled = await ensureNetwork();
+    if (!networkEnabled) {
+      throw new Error('Cannot connect to Firebase. Please check your internet connection.');
+    }
+
     const db = getFirestore();
     if (!db) {
       throw new Error('Failed to get Firestore');
     }
 
-    // Create or update document in question-sets collection
-    let docRef;
-    if (activeSet.firestoreId) {
-      // Update existing document
-      docRef = db.collection('question-sets').doc(activeSet.firestoreId);
-      await docRef.update({
-        name: activeSet.name,
-        questions: activeSet.questions,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    } else {
-      // Create new document
-      docRef = await db.collection('question-sets').add({
-        name: activeSet.name,
-        questions: activeSet.questions,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    }
+    // Always create NEW document (never update)
+    const docRef = await db.collection('question-sets').add({
+      name: activeSet.name,
+      questions: activeSet.questions,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
 
     activeSet.firestoreId = docRef.id;
     activeSet.updatedAt = new Date().toISOString();
     saveQuestionSetsToStorage();
     
-    updateCopyButtonState();
     refreshQuestionSetUI();
     showToast('✅ Backup successful!', 'ok');
   } catch (e) {
@@ -1539,6 +1719,12 @@ async function importFromFirestore() {
     return;
   }
 
+  // Check if online
+  if (!isOnline()) {
+    showToast('❌ No internet connection. Please check your network.', 'err');
+    return;
+  }
+
   try {
     const config = loadFirebaseConfig();
     if (!config || !config.projectId) {
@@ -1548,6 +1734,12 @@ async function importFromFirestore() {
     const initialized = initializeFirebase(config);
     if (!initialized) {
       throw new Error('Failed to initialize Firebase');
+    }
+
+    // Ensure network is enabled before querying
+    const networkEnabled = await ensureNetwork();
+    if (!networkEnabled) {
+      throw new Error('Cannot connect to Firebase. Please check your internet connection.');
     }
 
     const db = getFirestore();

@@ -107,7 +107,7 @@
           <button class="action-btn btn-secondary" onclick="promptRenameQuestionSet()">✏️ RENAME</button>
           <button class="action-btn btn-danger" onclick="deleteActiveQuestionSet()">🗑 DELETE</button>
           <button class="action-btn" id="btn-backup" onclick="backupQuestionSet()">☁️ BACKUP</button>
-          <button class="action-btn btn-secondary" id="btn-copy-link" onclick="copyButtonHandler()">📋 COPY</button>
+          <button class="action-btn btn-secondary hidden" id="btn-firebase-sets" onclick="showFirebaseSetsModal()">📂 FIREBASE SETS</button>
         </div>
       </div>
       <div class="form-group">
@@ -202,6 +202,17 @@
         <button id="modal-replace-btn" class="action-btn" onclick="applyImportReplace()">Replace</button>
         <button id="modal-append-btn" class="action-btn btn-green" onclick="applyImportAppend()">Append</button>
         <button id="modal-edit-btn" class="action-btn btn-green hidden" onclick="applyEditQuestion()">Edit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIREBASE SETS MODAL -->
+  <div id="firebase-sets-modal" class="modal-overlay hidden" onclick="if (event.target === this) closeFirebaseSetsModal()">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="firebase-sets-modal-title">
+      <h3 id="firebase-sets-modal-title" class="modal-title">☁️ FIREBASE SETS</h3>
+      <div id="firebase-sets-list" class="firebase-sets-list"></div>
+      <div class="modal-buttons">
+        <button class="action-btn btn-secondary" onclick="closeFirebaseSetsModal()">Close</button>
       </div>
     </div>
   </div>
