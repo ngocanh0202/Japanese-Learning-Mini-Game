@@ -1,0 +1,249 @@
+// ================================================
+// GAME 5: LISTENING QUIZ
+// ================================================
+
+let listenDeck = [];
+let listenIdx = 0;
+let listenHP = 100;
+let listenScore = 0;
+let listenCombo = 0;
+let listenTimeLeft = 0;
+let listenTimerInterval = null;
+let listenDelayTimeout = null;
+
+function startListen() {
+  stopListenTimer();
+  listenDeck = getPrioritizedDeck(questions, 'listen');
+  listenIdx = 0;
+  listenHP = 100;
+  listenScore = 0;
+  listenCombo = 0;
+  showScreen('screen-listen');
+  renderListen();
+}
+
+function renderListen() {
+  const container = document.getElementById('screen-listen');
+  if (!container) return;
+
+  if (listenIdx >= listenDeck.length) {
+    return listenComplete();
+  }
+
+  const q = listenDeck[listenIdx];
+  document.getElementById('listen-progress').textContent = `${listenIdx + 1} / ${listenDeck.length}`;
+  document.getElementById('listen-audio-status').textContent = '';
+  document.getElementById('listen-explanation').classList.add('hidden');
+  document.getElementById('listen-next').classList.add('hidden');
+  updateListenHUD();
+  if (settings.quizTimerEnabled) {
+    startListenTimer();
+  } else {
+    stopListenTimer();
+  }
+
+  const choices = document.getElementById('listen-choices');
+  choices.innerHTML = '';
+
+  q.a.forEach((answer, index) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'choice-btn listen-choice-btn';
+    btn.textContent = answer;
+    btn.onclick = () => answerListen(index, btn, q);
+    choices.appendChild(btn);
+  });
+
+  playListenAudio(q.word);
+}
+
+function playListenAudio(text) {
+  const status = document.getElementById('listen-audio-status');
+  if (!status) return;
+
+  if (!text) {
+    status.textContent = 'No audio text available.';
+    return;
+  }
+
+  if (!('speechSynthesis' in window)) {
+    status.textContent = 'Audio not supported in this browser.';
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'ja-JP';
+  utterance.rate = 0.9;
+  utterance.onstart = () => {
+    status.textContent = '🔊 Playing audio...';
+  };
+  utterance.onend = () => {
+    status.textContent = '🔊 Audio played. Choose the correct reading.';
+  };
+  utterance.onerror = () => {
+    status.textContent = '❌ Audio playback failed.';
+  };
+  window.speechSynthesis.speak(utterance);
+}
+
+function replayListenAudio() {
+  if (listenIdx >= listenDeck.length) return;
+  const q = listenDeck[listenIdx];
+  playListenAudio(q.word);
+}
+
+function answerListen(choice, btn, q) {
+  stopListenTimer();
+  const buttons = document.querySelectorAll('.listen-choice-btn');
+  buttons.forEach(b => b.disabled = true);
+
+  const isCorrect = choice === q.c;
+  if (isCorrect) {
+    btn.classList.add('correct');
+    listenCombo++;
+    const points = 10 * Math.max(1, listenCombo);
+    listenScore += points;
+    playerEXP += points;
+    updateQuestionStats(listenIdx, 'listen', true);
+    showToast(`✅ Correct! +${points} EXP`, 'ok');
+  } else {
+    btn.classList.add('wrong');
+    if (!settings.disableGameOver) {
+      listenHP = Math.max(0, listenHP - 20);
+    }
+    listenCombo = 0;
+    updateQuestionStats(listenIdx, 'listen', false);
+    showToast('❌ Wrong answer!', 'err');
+    document.getElementById('screen-listen').classList.add('shake');
+    setTimeout(() => document.getElementById('screen-listen').classList.remove('shake'), 400);
+  }
+
+  const correctButton = buttons[q.c];
+  if (correctButton) correctButton.classList.add('correct');
+
+  const explanation = document.getElementById('listen-explanation');
+  explanation.textContent = q.ex || q.translation || 'No explanation available.';
+  explanation.classList.remove('hidden');
+  document.getElementById('listen-next').classList.remove('hidden');
+  document.getElementById('listen-score').textContent = listenScore;
+  document.getElementById('listen-combo').textContent = listenCombo;
+  document.getElementById('listen-hpbar').style.width = `${Math.max(0, listenHP)}%`;
+
+  if (listenHP <= 0) {
+    setTimeout(() => {
+      showToast('💀 Out of health! Game over.', 'err');
+      showListenGameOver();
+    }, 1000);
+  }
+}
+
+function clearListenDelayTimeout() {
+  if (listenDelayTimeout) {
+    clearTimeout(listenDelayTimeout);
+    listenDelayTimeout = null;
+  }
+}
+
+function stopListenTimer() {
+  if (listenTimerInterval) {
+    clearInterval(listenTimerInterval);
+    listenTimerInterval = null;
+  }
+  clearListenDelayTimeout();
+}
+
+function startListenTimer() {
+  stopListenTimer();
+  if (!settings.quizTimerEnabled) return;
+  listenTimeLeft = settings.quizTimeLimit;
+  updateListenHUD();
+  listenTimerInterval = setInterval(() => {
+    listenTimeLeft = Math.max(0, listenTimeLeft - 1);
+    updateListenHUD();
+    if (listenTimeLeft <= 0) {
+      handleListenTimeout();
+    }
+  }, 1000);
+}
+
+function updateListenHUD() {
+  document.getElementById('listen-score').textContent = listenScore;
+  document.getElementById('listen-combo').textContent = listenCombo;
+  const timerEl = document.getElementById('listen-timer');
+  if (timerEl) {
+    timerEl.textContent = settings.quizTimerEnabled ? String(listenTimeLeft).padStart(2, '0') : '--';
+  }
+  document.getElementById('listen-hpbar').style.width = `${Math.max(0, listenHP)}%`;
+}
+
+function handleListenTimeout() {
+  stopListenTimer();
+  if (listenIdx >= listenDeck.length) return;
+
+  listenCombo = 0;
+
+  document.getElementById('screen-listen').classList.add('shake');
+  setTimeout(() => document.getElementById('screen-listen').classList.remove('shake'), 400);
+
+
+  const buttons = document.querySelectorAll('.listen-choice-btn');
+  buttons.forEach(b => b.disabled = true);
+
+  const q = listenDeck[listenIdx];
+  const correctButton = buttons[q.c];
+  if (correctButton) correctButton.classList.add('correct');
+
+  const explanation = document.getElementById('listen-explanation');
+  explanation.textContent = q.ex || q.translation || 'No explanation available.';
+  explanation.classList.remove('hidden');
+  document.getElementById('listen-next').classList.remove('hidden');
+
+  if (!settings.disableGameOver) {
+    listenHP = Math.max(0, listenHP - 20);
+  }
+  updateListenHUD();
+  if (!settings.disableGameOver && listenHP <= 0) {
+    showToast('💀 Time’s up! Game over.', 'err');
+    listenDelayTimeout = setTimeout(() => {
+      listenDelayTimeout = null;
+      showListenGameOver();
+    }, 900);
+    return;
+  }
+
+  showToast('⏱ Time’s up! Wrong answer.', 'err');
+  listenDelayTimeout = setTimeout(() => {
+    listenDelayTimeout = null;
+    nextListen();
+  }, 900);
+}
+
+function nextListen() {
+  listenIdx++;
+  if (listenIdx < listenDeck.length) {
+    renderListen();
+  } else {
+    listenComplete();
+  }
+}
+
+function listenComplete() {
+  stopListenTimer();
+  playerCombo = Math.max(playerCombo, listenCombo);
+  saveToStorage();
+  showToast(`🎧 Listening Quiz complete! Score: ${listenScore}`, 'info');
+  setTimeout(() => showScreen('screen-menu'), 800);
+}
+
+function showListenGameOver() {
+  stopListenTimer();
+  const el = document.getElementById('listen-go-score');
+  if (el) el.textContent = listenScore;
+  document.getElementById('listen-gameover')?.classList.remove('hidden');
+}
+
+function restartListen() {
+  document.getElementById('listen-gameover')?.classList.add('hidden');
+  startListen();
+}

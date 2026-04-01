@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>日本語 QUEST — Japanese Learning Mini-Games</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- SCANLINE OVERLAY -->
+  <div class="scanlines"></div>
+  <!-- STARS -->
+  <canvas id="stars-bg"></canvas>
+
+  <!-- =================== SCREENS =================== -->
+
+  <!-- MAIN MENU -->
+  <div id="screen-menu" class="screen active">
+    <div class="menu-container">
+      <div class="title-block">
+        <div class="title-jp">日本語</div>
+        <div class="title-en">QUEST</div>
+        <div class="title-sub">JAPANESE LEARNING MINI-GAMES</div>
+      </div>
+
+      <div class="hp-exp-bar">
+        <div class="stat-row">
+          <span class="stat-label">❤ HP</span>
+          <div class="bar-track"><div class="bar-fill hp-fill" id="menu-hp"></div></div>
+          <span class="stat-val" id="menu-hp-val">100</span>
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-label">⭐ EXP</span>
+          <div class="bar-track"><div class="bar-fill exp-fill" id="menu-exp"></div></div>
+          <span class="stat-val" id="menu-exp-val">0</span>
+        </div>
+        <div class="stat-row level-row">
+          <span class="stat-label">🔰 LVL</span>
+          <span class="stat-val" id="menu-level">1</span>
+        </div>
+      </div>
+
+      <div class="menu-btn-container scrollbar-hide">
+        <nav class="main-nav">
+          <button class="menu-btn btn-quiz" onclick="startGame('quiz')">
+            <span class="btn-icon">📝</span>
+            <span class="btn-text">QUIZ<br><small>Multiple Choice</small></span>
+            <span class="btn-arrow">▶</span>
+          </button>
+          <button class="menu-btn btn-listen" onclick="startGame('listen')">
+            <span class="btn-icon">🎧</span>
+            <span class="btn-text">LISTENING QUIZ<br><small>Hear and choose</small></span>
+            <span class="btn-arrow">▶</span>
+          </button>
+          <button class="menu-btn btn-type" onclick="startGame('type')">
+            <span class="btn-icon">⌨</span>
+            <span class="btn-text">FALLING WORDS<br><small>Typing Challenge</small></span>
+            <span class="btn-arrow">▶</span>
+          </button>
+          <button class="menu-btn btn-match" onclick="startGame('match')">
+            <span class="btn-icon">🧩</span>
+            <span class="btn-text">MATCH<br><small>Pair Cards</small></span>
+            <span class="btn-arrow">▶</span>
+          </button>
+          <button class="menu-btn btn-flash" onclick="startGame('flash')">
+            <span class="btn-icon">🃏</span>
+            <span class="btn-text">FLASHCARD<br><small>Flip Cards</small></span>
+            <span class="btn-arrow">▶</span>
+          </button>
+          <button class="menu-btn btn-settings" onclick="showScreen('screen-settings')">
+            <span class="btn-icon">⚙️</span>
+            <span class="btn-text">SETTINGS<br><small>Settings</small></span>
+            <span class="btn-arrow">▶</span>
+          </button>
+          <button class="menu-btn btn-data" onclick="showScreen('screen-data')">
+            <span class="btn-icon">📦</span>
+            <span class="btn-text">DATA MANAGEMENT<br><small>Import / Export</small></span>
+            <span class="btn-arrow">▶</span>
+          </button>
+        </nav>
+      </div>
+
+      <div class="menu-footer">
+        <span id="data-count">0 câu hỏi đã nạp</span> &nbsp;|&nbsp; COMBO: <span id="menu-combo">0</span>x
+      </div>
+    </div>
+  </div>
+
+  <!-- DATA MANAGEMENT -->
+  <div id="screen-data" class="screen">
+    <div class="panel">
+      <h2 class="panel-title">📦 DATA MANAGEMENT</h2>
+      <div class="form-group">
+        <label>Question set</label>
+        <div class="btn-row">
+          <select id="question-set-selector" onchange="switchQuestionSet(this.value)"></select>
+          <button class="action-btn btn-secondary" onclick="promptCreateQuestionSet()">+ NEW</button>
+          <button class="action-btn btn-secondary" onclick="promptRenameQuestionSet()">✏️ RENAME</button>
+          <button class="action-btn btn-danger" onclick="deleteActiveQuestionSet()">🗑 DELETE</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Active set: <span id="active-set-name">Default Set</span></label>
+      </div>
+      <div class="form-group">
+        <label>Press IMPORT to paste question JSON in the modal.</label>
+      </div>
+      <div class="btn-row">
+        <button class="action-btn" onclick="openImportModal()">✅ IMPORT</button>
+        <button class="action-btn btn-danger" onclick="clearData()">🗑 CLEAR SET</button>
+        <button class="action-btn btn-secondary" onclick="loadSampleData()">📚 SAMPLE DATA</button>
+        <button class="action-btn btn-secondary" onclick="exportData()">📤 EXPORT</button>
+      </div>
+      <div id="data-status" class="status-msg"></div>
+      <div class="form-group">
+        <label for="question-search">Search questions</label>
+        <input id="question-search" type="text" placeholder="Search by word, question, romaji, or translation" oninput="updateQuestionSearch()" />
+      </div>
+      <div class="current-data">
+        <h3>Current items: <span id="current-count">0</span></h3>
+        <div id="data-preview" class="data-preview"></div>
+        <div id="question-list" class="question-list"></div>
+      </div>
+      <button class="back-btn" onclick="showScreen('screen-menu')">◀ BACK TO MENU</button>
+    </div>
+  </div>
+
+  <!-- IMPORT MODAL -->
+  <div id="import-modal" class="modal-overlay hidden" onclick="if (event.target === this) closeImportModal()">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="import-modal-title">
+      <h3 id="import-modal-title" class="modal-title">📥 IMPORT DATA</h3>
+      <textarea id="import-textarea" class="modal-textarea" placeholder='[{"word":"学生","q":"What's the reading?","a":["がくせい","がくぜい","がっせい","かくせい"],"c":0,"romaji":"gakusei","translation":"Student","ex":"Student"}]'></textarea>
+      <div class="modal-buttons">
+        <button class="action-btn btn-secondary" onclick="closeImportModal()">Cancel</button>
+        <button id="modal-replace-btn" class="action-btn" onclick="applyImportReplace()">Replace</button>
+        <button id="modal-append-btn" class="action-btn btn-green" onclick="applyImportAppend()">Append</button>
+        <button id="modal-edit-btn" class="action-btn btn-green hidden" onclick="applyEditQuestion()">Edit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="screen-settings" class="screen">
+    <div class="panel">
+      <h2 class="panel-title">⚙️ SETTINGS</h2>
+      <div class="settings-group">
+        <div class="setting-block">
+          <h3>Game 1 + 5 - QUIZ / LISTEN</h3>
+          <label class="setting-row"><input type="checkbox" id="quiz-timer-enabled" onchange="updateSettingsFromUI()"/> Enable per-question timer</label>
+          <label class="setting-row"><span>Time per question</span>
+            <select id="quiz-time-limit" class="setting-select" onchange="updateSettingsFromUI()">
+              <option value="10">10 seconds</option>
+              <option value="15">15 seconds</option>
+              <option value="20">20 seconds</option>
+              <option value="30">30 seconds</option>
+              <option value="45">45 seconds</option>
+              <option value="60">60 seconds</option>
+            </select>
+          </label>
+        </div>
+        <div class="setting-block">
+          <h3>Game 3 - FALLING WORDS</h3>
+          <label class="setting-row"><span>Game speed</span>
+            <select id="type-game-speed" class="setting-select" onchange="updateSettingsFromUI()">
+              <option value="slow">Slow</option>
+              <option value="medium">Medium</option>
+              <option value="fast">Fast</option>
+            </select>
+          </label>
+          <label class="setting-row"><span>Spawn interval</span>
+            <select id="type-spawn-interval" class="setting-select" onchange="updateSettingsFromUI()">
+              <option value="slow">Slow</option>
+              <option value="medium">Medium</option>
+              <option value="fast">Fast</option>
+            </select>
+          </label>
+          <label class="setting-row"><input type="checkbox" id="type-hints-enabled" onchange="updateSettingsFromUI()"/> Show hiragana / translation hints</label>
+        </div>
+        <div class="setting-block">
+          <h3>Game 4 - MATCH</h3>
+          <label class="setting-row"><span>Time limit</span>
+            <select id="match-time-limit" class="setting-select" onchange="updateSettingsFromUI()">
+              <option value="30">30 seconds</option>
+              <option value="45">45 seconds</option>
+              <option value="60">60 seconds</option>
+              <option value="90">90 seconds</option>
+            </select>
+          </label>
+        </div>
+        <div class="setting-block">
+          <h3>Display</h3>
+          <label class="setting-row"><input type="checkbox" id="scanlines-enabled" onchange="updateSettingsFromUI()"/> Show scanlines overlay</label>
+          <label class="setting-row"><input type="checkbox" id="disable-gameover-enabled" onchange="updateSettingsFromUI()"/> Disable HP / game over</label>
+        </div>
+        <div class="setting-block">
+          <h3>🔀 Smart Prioritization</h3>
+          <label class="setting-row"><input type="checkbox" id="priority-enabled" onchange="updateSettingsFromUI()"/> Enable smart question prioritization</label>
+          <p class="setting-desc" id="priority-desc" style="display:none;">Adjust how questions are prioritized. Higher weights = more influence.</p>
+          <div class="priority-weights" id="priority-weights" style="display:none; padding-left: 12px;">
+            <label class="setting-row"><span>Incorrect weight</span>
+              <input type="range" id="priority-incorrect" min="0" max="10" value="5" onchange="updateSettingsFromUI()"/>
+              <span class="range-value" id="priority-incorrect-val">5</span>
+            </label>
+            <label class="setting-row"><span>Time since seen weight</span>
+              <input type="range" id="priority-time" min="0" max="10" value="3" onchange="updateSettingsFromUI()"/>
+              <span class="range-value" id="priority-time-val">3</span>
+            </label>
+            <label class="setting-row"><span>Learning effect weight</span>
+              <input type="range" id="priority-learning" min="0" max="10" value="2" onchange="updateSettingsFromUI()"/>
+              <span class="range-value" id="priority-learning-val">2</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <button class="back-btn" onclick="showScreen('screen-menu')">◀ BACK TO MENU</button>
+    </div>
+  </div>
+
+  <!-- GAME 5: LISTENING QUIZ -->
+  <div id="screen-listen" class="screen">
+    <div class="game-hud">
+      <button class="hud-back" onclick="exitGame()">◀</button>
+      <div class="hud-title">🎧 LISTENING</div>
+      <div class="hud-stats">
+        <span>⭐ <span id="listen-score">0</span></span>
+        <span>🔥 x<span id="listen-combo">0</span></span>
+        <span>⏱ <span id="listen-timer">00</span>s</span>
+        <span id="listen-progress">0 / 0</span>
+      </div>
+    </div>
+    <div class="hp-bar-wrap"><div class="hp-bar-inner" id="listen-hpbar"></div></div>
+    <div class="listen-container">
+      <div class="question-card" id="listen-instruction">Listen to the Japanese word, then choose the correct reading.</div>
+      <div class="btn-row" style="justify-content: center; margin: 12px 0 0;">
+        <button class="action-btn btn-secondary" onclick="replayListenAudio()">🔊 Play again</button>
+      </div>
+      <div id="listen-audio-status" class="status-msg" style="margin-top: 12px;"></div>
+      <div class="choices-grid" id="listen-choices" style="margin-top: 16px;"></div>
+      <div class="explanation-box hidden" id="listen-explanation" style="margin-top: 16px;"></div>
+      <button class="next-btn hidden" id="listen-next" onclick="nextListen()">Next ▶</button>
+    </div>
+    <div class="gameover-overlay hidden" id="listen-gameover">
+      <div class="gameover-box">
+        <div class="go-title">GAME OVER</div>
+        <div class="go-score">Score: <span id="listen-go-score">0</span></div>
+        <button class="action-btn" onclick="restartListen()">▶ RESTART</button>
+        <button class="action-btn btn-secondary" onclick="exitGame()">◀ MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME 1: QUIZ -->
+  <div id="screen-quiz" class="screen">
+    <div class="game-hud">
+      <button class="hud-back" onclick="exitGame()">◀</button>
+      <div class="hud-title">📝 QUIZ</div>
+      <div class="hud-stats">
+        <span>❤ <span id="quiz-hp">100</span></span>
+        <span>⭐ <span id="quiz-score">0</span></span>
+        <span>🔥 x<span id="quiz-combo">0</span></span>
+        <span>⏱ <span id="quiz-timer">00</span>s</span>
+      </div>
+    </div>
+    <div class="hp-bar-wrap"><div class="hp-bar-inner" id="quiz-hpbar"></div></div>
+
+    <div class="quiz-container">
+      <div class="question-card" id="quiz-question">Loading...</div>
+      <div class="progress-info">
+        <span id="quiz-progress">0 / 0</span>
+      </div>
+      <div class="choices-grid" id="quiz-choices"></div>
+      <div class="explanation-box hidden" id="quiz-explanation"></div>
+      <button class="next-btn hidden" id="quiz-next" onclick="nextQuiz()">Next ▶</button>
+    </div>
+  </div>
+
+  <!-- GAME 2: FLASHCARD -->
+  <div id="screen-flash" class="screen">
+    <div class="game-hud">
+      <button class="hud-back" onclick="exitGame()">◀</button>
+      <div class="hud-title">🃏 FLASHCARD</div>
+      <div class="hud-stats">
+        <span>✅ <span id="flash-known">0</span></span>
+        <span>❌ <span id="flash-unknown">0</span></span>
+        <span id="flash-progress-txt">0/0</span>
+      </div>
+    </div>
+
+    <div class="flash-container">
+      <div class="card-scene" id="card-scene" onclick="flipCard()">
+        <div class="card-inner" id="card-inner">
+          <div class="card-face card-front" id="card-front">
+            <div class="card-hint">TAP TO FLIP</div>
+            <div class="card-word" id="card-word"></div>
+          </div>
+          <div class="card-face card-back" id="card-back">
+            <div class="card-reading" id="card-reading"></div>
+            <div class="card-explanation" id="card-explanation"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flash-actions hidden" id="flash-actions">
+        <button class="flash-btn btn-unknown" onclick="markCard(false)">❌ Unknown</button>
+        <button class="flash-btn btn-known" onclick="markCard(true)">✅ Known</button>
+      </div>
+
+      <div class="flash-progress">
+        <div class="flash-bar-track"><div class="flash-bar-fill" id="flash-bar"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME 4: MATCH -->
+  <div id="screen-match" class="screen">
+    <div class="game-hud">
+      <button class="hud-back" onclick="exitGame()">◀</button>
+      <div class="hud-title">🧩 MATCH</div>
+      <div class="hud-stats">
+        <span>✅ <span id="match-found">0</span></span>
+        <span>🎯 <span id="match-attempts">0</span></span>
+        <span>⏱ <span id="match-timer">0</span>s</span>
+      </div>
+    </div>
+    <div class="hp-bar-wrap"><div class="hp-bar-inner" id="match-hpbar"></div></div>
+    <div class="match-container">
+      <div class="match-instructions">Match words with the correct label/romaji</div>
+      <div id="match-board" class="tile-grid"></div>
+      <div class="match-footer">
+        <button class="action-btn" onclick="startMatch()">▶ Play again</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME 3: FALLING TYPING -->
+  <div id="screen-type" class="screen">
+    <div class="game-hud">
+      <button class="hud-back" onclick="exitGame()">◀</button>
+      <div class="hud-title">⌨ FALLING WORDS</div>
+      <div class="hud-stats">
+        <span>❤ <span id="type-hp">100</span></span>
+        <span>⭐ <span id="type-score">0</span></span>
+        <span>🔥 x<span id="type-combo">0</span></span>
+        <span>⏩ <span id="type-mode">Medium</span></span>
+      </div>
+    </div>
+    <div class="hp-bar-wrap"><div class="hp-bar-inner" id="type-hpbar"></div></div>
+
+    <div class="type-container">
+      <canvas id="type-canvas"></canvas>
+      <div class="type-input-wrap">
+        <div class="type-target" id="type-target">—</div>
+        <input type="text" id="type-input" placeholder="Type romaji..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      </div>
+    </div>
+
+  </div>
+
+      <!-- GAME OVER -->
+  <div class="gameover-overlay hidden" id="modal-gameover">
+    <div class="gameover-box">
+      <div class="go-title">GAME OVER</div>
+      <div class="go-score">Score: <span id="go-score">0</span></div>
+      <button class="action-btn" id="btn-restart">▶ RESTART</button>
+      <button class="action-btn btn-secondary" onclick="exitGame()">◀ MENU</button>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="data.js"></script>
+  <script src="./lib/wanakana.min.js"></script>
+  <script src="main.js"></script>
+  <script src="game-listen.js"></script>
+  <script src="game-quiz.js"></script>
+  <script src="game-flash.js"></script>
+  <script src="game-match.js"></script>
+  <script src="game-type.js"></script>
+</body>
+</html>
