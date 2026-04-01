@@ -60,12 +60,20 @@ function endMatchByTime() {
 
 function renderMatchBoard() {
   const board = document.getElementById('match-board');
-  board.innerHTML = matchCards.map(card => `
-    <button class="tile-card ${card.revealed ? 'revealed ' : ''}${card.matched ? 'matched' : ''}"
-      onclick="handleMatchCard('${card.cardId}')"
-      ${card.revealed || card.matched || !matchActive ? 'disabled' : ''}>
-      ${card.revealed || card.matched ? card.text : ' ? '}
-    </button>`).join('');
+  const animationsEnabled = settings.animationEnabled !== false;
+  
+  board.innerHTML = matchCards.map((card, idx) => {
+    let classes = 'tile-card';
+    if (card.revealed) classes += ' revealed';
+    if (card.matched) classes += ' matched';
+    
+    if (animationsEnabled && !card.revealed && !card.matched && matchActive) {
+      classes += ' entering';
+      return `<button class="${classes}" style="animation-delay: ${idx * 0.05}s" onclick="handleMatchCard('${card.cardId}')" ${card.revealed || card.matched || !matchActive ? 'disabled' : ''}>${card.revealed || card.matched ? card.text : ' ? '}</button>`;
+    }
+    
+    return `<button class="${classes}" onclick="handleMatchCard('${card.cardId}')" ${card.revealed || card.matched || !matchActive ? 'disabled' : ''}>${card.revealed || card.matched ? card.text : ' ? '}</button>`;
+  }).join('');
 }
 
 function startMatch() {
@@ -90,26 +98,54 @@ function startMatch() {
 function handleMatchCard(cardId) {
   const card = matchCards.find(c => c.cardId === cardId);
   if (!card || card.matched || card.revealed || matchSelection.length === 2 || !matchActive) return;
+  
+  const animationsEnabled = settings.animationEnabled !== false;
+  
   card.revealed = true;
   matchSelection.push(card);
+  
+  if (animationsEnabled) {
+    const cardEl = document.querySelector(`[onclick="handleMatchCard('${cardId}')"]`);
+    if (cardEl) cardEl.classList.add('flipping');
+  }
+  
   renderMatchBoard();
 
   if (matchSelection.length === 2) {
     matchAttempts++;
     updateMatchHUD();
     const [first, second] = matchSelection;
+    
     if (first.pairId === second.pairId && first.kind !== second.kind) {
       first.matched = second.matched = true;
       matchFound++;
       matchSelection = [];
       updateQuestionStats(first.pairId, 'match', true);
+      
+      if (animationsEnabled) {
+        setTimeout(() => {
+          const cardEls = document.querySelectorAll('.tile-card.matched');
+          cardEls.forEach(el => el.classList.add('match-success'));
+        }, 100);
+      }
+      
       showToast('✅ Correct match!', 'ok');
       updateMatchHUD();
-      if (matchFound === pairCount) {        stopMatchTimer();
-        matchActive = false;        setTimeout(() => showToast('🎉 You completed the game!', 'info'), 300);
+      if (matchFound === pairCount) {        
+        stopMatchTimer();
+        matchActive = false;        
+        setTimeout(() => showToast('🎉 You completed the game!', 'info'), 300);
       }
     } else {
       updateQuestionStats(first.pairId, 'match', false);
+      
+      if (animationsEnabled) {
+        setTimeout(() => {
+          const cardEls = document.querySelectorAll('.tile-card.revealed:not(.matched)');
+          cardEls.forEach(el => el.classList.add('match-wrong'));
+        }, 300);
+      }
+      
       setTimeout(() => {
         first.revealed = false;
         second.revealed = false;

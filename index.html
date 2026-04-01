@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="images/icon.jpg" type="image/jpeg">
 </head>
 <body>
   <!-- SCANLINE OVERLAY -->
@@ -194,24 +195,43 @@
           <h3>Display</h3>
           <label class="setting-row"><input type="checkbox" id="scanlines-enabled" onchange="updateSettingsFromUI()"/> Show scanlines overlay</label>
           <label class="setting-row"><input type="checkbox" id="disable-gameover-enabled" onchange="updateSettingsFromUI()"/> Disable HP / game over</label>
+          <label class="setting-row"><input type="checkbox" id="animation-enabled" onchange="updateSettingsFromUI()"/> Enable animations</label>
         </div>
-        <div class="setting-block">
+        <div class="setting-block setting-block-priority">
           <h3>🔀 Smart Prioritization</h3>
-          <label class="setting-row"><input type="checkbox" id="priority-enabled" onchange="updateSettingsFromUI()"/> Enable smart question prioritization</label>
-          <p class="setting-desc" id="priority-desc" style="display:none;">Adjust how questions are prioritized. Higher weights = more influence.</p>
-          <div class="priority-weights" id="priority-weights" style="display:none; padding-left: 12px;">
-            <label class="setting-row"><span>Incorrect weight</span>
-              <input type="range" id="priority-incorrect" min="0" max="10" value="5" onchange="updateSettingsFromUI()"/>
-              <span class="range-value" id="priority-incorrect-val">5</span>
-            </label>
-            <label class="setting-row"><span>Time since seen weight</span>
-              <input type="range" id="priority-time" min="0" max="10" value="3" onchange="updateSettingsFromUI()"/>
-              <span class="range-value" id="priority-time-val">3</span>
-            </label>
-            <label class="setting-row"><span>Learning effect weight</span>
-              <input type="range" id="priority-learning" min="0" max="10" value="2" onchange="updateSettingsFromUI()"/>
-              <span class="range-value" id="priority-learning-val">2</span>
-            </label>
+          <label class="setting-row setting-toggle">
+            <span>Enable smart question prioritization</span>
+            <input type="checkbox" id="priority-enabled" class="toggle-input" onchange="updateSettingsFromUI()"/>
+            <span class="toggle-slider"></span>
+          </label>
+          <div class="priority-panel" id="priority-panel">
+            <p class="setting-desc">Adjust how questions are prioritized. Higher weights = more influence on selection.</p>
+            <div class="priority-weight-group">
+              <div class="priority-weight-item">
+                <div class="weight-header">
+                  <span class="weight-label">Incorrect Answer</span>
+                  <span class="weight-value" id="priority-incorrect-val">5</span>
+                </div>
+                <input type="range" id="priority-incorrect" min="0" max="10" value="5" class="weight-slider" oninput="updateSettingsFromUI()"/>
+                <span class="weight-desc">Questions you answered wrong appear more often</span>
+              </div>
+              <div class="priority-weight-item">
+                <div class="weight-header">
+                  <span class="weight-label">Time Since Seen</span>
+                  <span class="weight-value" id="priority-time-val">3</span>
+                </div>
+                <input type="range" id="priority-time" min="0" max="10" value="3" class="weight-slider" oninput="updateSettingsFromUI()"/>
+                <span class="weight-desc">Questions not seen in a while get priority</span>
+              </div>
+              <div class="priority-weight-item">
+                <div class="weight-header">
+                  <span class="weight-label">Learning Effect</span>
+                  <span class="weight-value" id="priority-learning-val">2</span>
+                </div>
+                <input type="range" id="priority-learning" min="0" max="10" value="2" class="weight-slider" oninput="updateSettingsFromUI()"/>
+                <span class="weight-desc">Correct streaks reduce question priority</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -224,6 +244,7 @@
     <div class="game-hud">
       <button class="hud-back" onclick="exitGame()">◀</button>
       <div class="hud-title">🎧 LISTENING</div>
+      <button class="hud-settings" onclick="openGamePrioritySettings('listen')">⚙️</button>
       <div class="hud-stats">
         <span>⭐ <span id="listen-score">0</span></span>
         <span>🔥 x<span id="listen-combo">0</span></span>
@@ -257,6 +278,7 @@
     <div class="game-hud">
       <button class="hud-back" onclick="exitGame()">◀</button>
       <div class="hud-title">📝 QUIZ</div>
+      <button class="hud-settings" onclick="openGamePrioritySettings('quiz')">⚙️</button>
       <div class="hud-stats">
         <span>❤ <span id="quiz-hp">100</span></span>
         <span>⭐ <span id="quiz-score">0</span></span>
@@ -282,6 +304,7 @@
     <div class="game-hud">
       <button class="hud-back" onclick="exitGame()">◀</button>
       <div class="hud-title">🃏 FLASHCARD</div>
+      <button class="hud-settings" onclick="openGamePrioritySettings('flash')">⚙️</button>
       <div class="hud-stats">
         <span>✅ <span id="flash-known">0</span></span>
         <span>❌ <span id="flash-unknown">0</span></span>
@@ -319,6 +342,7 @@
     <div class="game-hud">
       <button class="hud-back" onclick="exitGame()">◀</button>
       <div class="hud-title">🧩 MATCH</div>
+      <button class="hud-settings" onclick="openGamePrioritySettings('match')">⚙️</button>
       <div class="hud-stats">
         <span>✅ <span id="match-found">0</span></span>
         <span>🎯 <span id="match-attempts">0</span></span>
@@ -340,6 +364,7 @@
     <div class="game-hud">
       <button class="hud-back" onclick="exitGame()">◀</button>
       <div class="hud-title">⌨ FALLING WORDS</div>
+      <button class="hud-settings" onclick="openGamePrioritySettings('type')">⚙️</button>
       <div class="hud-stats">
         <span>❤ <span id="type-hp">100</span></span>
         <span>⭐ <span id="type-score">0</span></span>
@@ -380,5 +405,49 @@
   <script src="game-flash.js"></script>
   <script src="game-match.js"></script>
   <script src="game-type.js"></script>
+
+  <!-- GAME PRIORITY SETTINGS MODAL -->
+  <div id="game-priority-modal" class="modal hidden">
+    <div class="modal-backdrop" onclick="closeGamePrioritySettings()"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="game-priority-title">⚙️ Game Settings</h3>
+        <button class="modal-close" onclick="closeGamePrioritySettings()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="setting-row setting-toggle">
+          <span>Override global settings</span>
+          <input type="checkbox" id="game-priority-override" class="toggle-input" onchange="updateGamePriorityOverride()"/>
+          <span class="toggle-slider"></span>
+        </div>
+        <div id="game-priority-weights" class="priority-panel">
+          <div class="priority-weight-item">
+            <div class="weight-header">
+              <span class="weight-label">Incorrect</span>
+              <span class="weight-value" id="game-priority-incorrect-val">5</span>
+            </div>
+            <input type="range" id="game-priority-incorrect" min="0" max="10" value="5" class="weight-slider" oninput="updateGamePriorityValues()"/>
+          </div>
+          <div class="priority-weight-item">
+            <div class="weight-header">
+              <span class="weight-label">Time Seen</span>
+              <span class="weight-value" id="game-priority-time-val">3</span>
+            </div>
+            <input type="range" id="game-priority-time" min="0" max="10" value="3" class="weight-slider" oninput="updateGamePriorityValues()"/>
+          </div>
+          <div class="priority-weight-item">
+            <div class="weight-header">
+              <span class="weight-label">Learning</span>
+              <span class="weight-value" id="game-priority-learning-val">2</span>
+            </div>
+            <input type="range" id="game-priority-learning" min="0" max="10" value="2" class="weight-slider" oninput="updateGamePriorityValues()"/>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="action-btn" onclick="closeGamePrioritySettings()">Done</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

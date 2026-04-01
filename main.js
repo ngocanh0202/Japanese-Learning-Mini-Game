@@ -23,6 +23,7 @@ let settings = {
   matchTimeLimit: 60,
   scanlinesEnabled: true,
   disableGameOver: false,
+  animationEnabled: true,
   priority: {
     enabled: false,
     global: { incorrect: 5, timeSinceSeen: 3, learning: 2 },
@@ -54,6 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadFromStorage();
   loadQuestionStats();
   applyScanlinesVisibility();
+  updateAnimationBodyClass();
   updateMenuUI();
   showScreen('screen-menu');
 });
@@ -504,25 +506,24 @@ function renderSettingsScreen() {
   document.getElementById('scanlines-enabled').checked = settings.scanlinesEnabled;
   document.getElementById('type-hints-enabled').checked = settings.typeHintsEnabled;
   document.getElementById('disable-gameover-enabled').checked = settings.disableGameOver;
+  document.getElementById('animation-enabled').checked = settings.animationEnabled !== false;
   document.getElementById('quiz-time-limit').value = settings.quizTimeLimit;
   document.getElementById('type-game-speed').value = settings.typeGameSpeed;
   document.getElementById('type-spawn-interval').value = settings.typeSpawnInterval;
   document.getElementById('match-time-limit').value = settings.matchTimeLimit;
+  updateAnimationBodyClass();
   
   const priorityEnabled = document.getElementById('priority-enabled');
-  const priorityDesc = document.getElementById('priority-desc');
-  const priorityWeights = document.getElementById('priority-weights');
+  const priorityPanel = document.getElementById('priority-panel');
   const priorityIncorrect = document.getElementById('priority-incorrect');
   const priorityTime = document.getElementById('priority-time');
   const priorityLearning = document.getElementById('priority-learning');
   
   priorityEnabled.checked = settings.priority?.enabled || false;
   if (settings.priority?.enabled) {
-    priorityDesc.style.display = 'block';
-    priorityWeights.style.display = 'block';
+    priorityPanel.classList.add('active');
   } else {
-    priorityDesc.style.display = 'none';
-    priorityWeights.style.display = 'none';
+    priorityPanel.classList.remove('active');
   }
   
   priorityIncorrect.value = settings.priority?.global?.incorrect ?? 5;
@@ -545,18 +546,15 @@ function updateSettingsFromUI() {
   settings.matchTimeLimit = parseInt(document.getElementById('match-time-limit').value, 10);
   
   const priorityEnabled = document.getElementById('priority-enabled').checked;
-  const priorityDesc = document.getElementById('priority-desc');
-  const priorityWeights = document.getElementById('priority-weights');
+  const priorityPanel = document.getElementById('priority-panel');
   const priorityIncorrect = document.getElementById('priority-incorrect');
   const priorityTime = document.getElementById('priority-time');
   const priorityLearning = document.getElementById('priority-learning');
   
   if (priorityEnabled) {
-    priorityDesc.style.display = 'block';
-    priorityWeights.style.display = 'block';
+    priorityPanel.classList.add('active');
   } else {
-    priorityDesc.style.display = 'none';
-    priorityWeights.style.display = 'none';
+    priorityPanel.classList.remove('active');
   }
   
   settings.priority = settings.priority || {};
@@ -566,8 +564,19 @@ function updateSettingsFromUI() {
   settings.priority.global.timeSinceSeen = parseInt(priorityTime.value, 10);
   settings.priority.global.learning = parseInt(priorityLearning.value, 10);
   
+  settings.animationEnabled = document.getElementById('animation-enabled').checked;
+  
   saveSettingsToStorage();
   applyScanlinesVisibility();
+  updateAnimationBodyClass();
+}
+
+function updateAnimationBodyClass() {
+  if (settings.animationEnabled === false) {
+    document.body.classList.add('animations-disabled');
+  } else {
+    document.body.classList.remove('animations-disabled');
+  }
 }
 
 /* ══════════════════════════════════════════════
@@ -1011,4 +1020,74 @@ function gameOver(score, combo, type) {
 function restartGame(onRestart) {
   document.getElementById('modal-gameover').classList.add('hidden');
   if (onRestart) onRestart();
+}
+
+let currentGameType = null;
+
+function openGamePrioritySettings(gameType) {
+  currentGameType = gameType;
+  const modal = document.getElementById('game-priority-modal');
+  const titles = { quiz: '📝 Quiz', listen: '🎧 Listening', flash: '🃏 Flashcard', match: '🧩 Match', type: '⌨ Falling Words' };
+  document.getElementById('game-priority-title').textContent = `⚙️ ${titles[gameType]} Settings`;
+  
+  const perGame = settings.priority?.perGame?.[gameType];
+  const override = perGame?.enabled === true || perGame?.enabled === 1;
+  
+  document.getElementById('game-priority-override').checked = override;
+  document.getElementById('game-priority-weights').classList.toggle('active', override);
+  
+  if (override) {
+    document.getElementById('game-priority-incorrect').value = perGame.incorrect ?? 5;
+    document.getElementById('game-priority-time').value = perGame.timeSinceSeen ?? 3;
+    document.getElementById('game-priority-learning').value = perGame.learning ?? 2;
+  } else {
+    document.getElementById('game-priority-incorrect').value = settings.priority?.global?.incorrect ?? 5;
+    document.getElementById('game-priority-time').value = settings.priority?.global?.timeSinceSeen ?? 3;
+    document.getElementById('game-priority-learning').value = settings.priority?.global?.learning ?? 2;
+  }
+  
+  document.getElementById('game-priority-incorrect-val').textContent = document.getElementById('game-priority-incorrect').value;
+  document.getElementById('game-priority-time-val').textContent = document.getElementById('game-priority-time').value;
+  document.getElementById('game-priority-learning-val').textContent = document.getElementById('game-priority-learning').value;
+  
+  modal.classList.remove('hidden');
+}
+
+function closeGamePrioritySettings() {
+  document.getElementById('game-priority-modal').classList.add('hidden');
+  currentGameType = null;
+}
+
+function updateGamePriorityOverride() {
+  const override = document.getElementById('game-priority-override').checked;
+  document.getElementById('game-priority-weights').classList.toggle('active', override);
+  saveGamePrioritySettings();
+}
+
+function updateGamePriorityValues() {
+  document.getElementById('game-priority-incorrect-val').textContent = document.getElementById('game-priority-incorrect').value;
+  document.getElementById('game-priority-time-val').textContent = document.getElementById('game-priority-time').value;
+  document.getElementById('game-priority-learning-val').textContent = document.getElementById('game-priority-learning').value;
+  saveGamePrioritySettings();
+}
+
+function saveGamePrioritySettings() {
+  if (!currentGameType) return;
+  
+  const override = document.getElementById('game-priority-override').checked;
+  settings.priority = settings.priority || {};
+  settings.priority.perGame = settings.priority.perGame || {};
+  
+  if (override) {
+    settings.priority.perGame[currentGameType] = {
+      enabled: true,
+      incorrect: parseInt(document.getElementById('game-priority-incorrect').value, 10),
+      timeSinceSeen: parseInt(document.getElementById('game-priority-time').value, 10),
+      learning: parseInt(document.getElementById('game-priority-learning').value, 10)
+    };
+  } else {
+    settings.priority.perGame[currentGameType] = { enabled: null, incorrect: 5, timeSinceSeen: 3, learning: 2 };
+  }
+  
+  saveSettingsToStorage();
 }
