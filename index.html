@@ -106,6 +106,8 @@
           <button class="action-btn btn-secondary" onclick="promptCreateQuestionSet()">+ NEW</button>
           <button class="action-btn btn-secondary" onclick="promptRenameQuestionSet()">✏️ RENAME</button>
           <button class="action-btn btn-danger" onclick="deleteActiveQuestionSet()">🗑 DELETE</button>
+          <button class="action-btn" id="btn-backup" onclick="backupQuestionSet()">☁️ BACKUP</button>
+          <button class="action-btn btn-secondary" id="btn-copy-link" onclick="copyFirestoreId()">📋 COPY ID</button>
         </div>
       </div>
       <div class="form-group">
@@ -119,6 +121,56 @@
         <button class="action-btn btn-danger" onclick="clearData()">🗑 CLEAR SET</button>
         <button class="action-btn btn-secondary" onclick="loadSampleData()">📚 SAMPLE DATA</button>
         <button class="action-btn btn-secondary" onclick="exportData()">📤 EXPORT</button>
+      </div>
+      <div class="firebase-config-section">
+        <button type="button" class="toggle-config-btn" onclick="toggleFirebaseConfig()">🔧 FIREBASE CONFIG</button>
+        <div id="firebase-config-panel" class="firebase-config-panel hidden">
+          <div class="firebase-config-group">
+            <div class="form-group">
+              <label for="firebase-project-id">Project ID *</label>
+              <input id="firebase-project-id" type="text" placeholder="my-project-123" />
+            </div>
+            <div class="form-group">
+              <label for="firebase-bucket">Storage Bucket *</label>
+              <input id="firebase-bucket" type="text" placeholder="my-project-123.appspot.com" />
+            </div>
+          </div>
+          <div class="firebase-config-group">
+            <div class="form-group">
+              <label for="firebase-api-key">API Key</label>
+              <input id="firebase-api-key" type="text" placeholder="AIzaSy..." />
+            </div>
+            <div class="form-group">
+              <label for="firebase-auth-domain">Auth Domain</label>
+              <input id="firebase-auth-domain" type="text" placeholder="my-project.firebaseapp.com" />
+            </div>
+          </div>
+          <div class="firebase-config-group">
+            <div class="form-group">
+              <label for="firebase-messaging-sender-id">Messaging Sender ID</label>
+              <input id="firebase-messaging-sender-id" type="text" placeholder="123456789" />
+            </div>
+            <div class="form-group">
+              <label for="firebase-app-id">App ID</label>
+              <input id="firebase-app-id" type="text" placeholder="1:123456789:web:abc123..." />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="firebase-measurement-id">Measurement ID</label>
+            <input id="firebase-measurement-id" type="text" placeholder="G-XXXXXXXXXX" />
+          </div>
+          <div class="btn-row">
+            <button class="action-btn" onclick="saveFirebaseConfig()">💾 SAVE CONFIG</button>
+            <button class="action-btn btn-secondary" onclick="testFirebaseConnection()">🧪 TEST</button>
+          </div>
+        </div>
+      </div>
+      <div class="import-url-section">
+        <label>☁️ IMPORT FROM ID</label>
+        <div class="btn-row">
+          <input id="import-url-input" type="text" placeholder="Paste Firestore document ID here..." />
+          <button class="action-btn" onclick="importFromFirestore()">GET</button>
+        </div>
       </div>
       <div id="data-status" class="status-msg"></div>
       <div class="form-group">
@@ -432,6 +484,10 @@
   <!-- TOAST NOTIFICATION -->
   <div id="toast" class="toast hidden"></div>
 
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
   <script src="data.js"></script>
   <script src="./lib/wanakana.min.js"></script>
   <script src="main.js"></script>

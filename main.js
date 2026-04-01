@@ -57,6 +57,12 @@ document.addEventListener('DOMContentLoaded', () => {
   loadQuestionStats();
   applyScanlinesVisibility();
   updateAnimationBodyClass();
+  
+  const firebaseConfig = loadFirebaseConfig();
+  if (firebaseConfig) {
+    initializeFirebase(firebaseConfig);
+  }
+  
   updateMenuUI();
   showScreen('screen-menu');
 });
@@ -119,6 +125,7 @@ function showScreen(id) {
   if (id === 'screen-data') {
     refreshQuestionSetUI();
     refreshDataPreview();
+    updateCopyButtonState();
   }
   if (id === 'screen-menu') updateMenuUI();
   if (id === 'screen-settings') renderSettingsScreen();
@@ -1293,5 +1300,289 @@ function renderStatsScreen() {
           <div class="mastery-label">New</div>
         </div>
       </div>`;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   FIREBASE CONFIG MANAGEMENT
+ ══════════════════════════════════════════════ */
+function loadFirebaseConfig() {
+  const stored = localStorage.getItem('jq_firebase_config');
+  if (stored) {
+    try {
+      const config = JSON.parse(stored);
+      return {
+        apiKey: config.apiKey || '',
+        authDomain: config.authDomain || '',
+        projectId: config.projectId || '',
+        storageBucket: config.storageBucket || '',
+        messagingSenderId: config.messagingSenderId || '',
+        appId: config.appId || '',
+        measurementId: config.measurementId || ''
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+  return null;
+}
+
+function saveFirebaseConfig() {
+  const projectId = document.getElementById('firebase-project-id').value.trim();
+
+  if (!projectId) {
+    showToast('❌ Please fill in Project ID', 'err');
+    return;
+  }
+
+  const config = {
+    apiKey: document.getElementById('firebase-api-key').value.trim(),
+    authDomain: document.getElementById('firebase-auth-domain').value.trim(),
+    projectId: projectId,
+    storageBucket: document.getElementById('firebase-bucket').value.trim(),
+    messagingSenderId: document.getElementById('firebase-messaging-sender-id').value.trim(),
+    appId: document.getElementById('firebase-app-id').value.trim(),
+    measurementId: document.getElementById('firebase-measurement-id').value.trim()
+  };
+  
+  localStorage.setItem('jq_firebase_config', JSON.stringify(config));
+  
+  const initialized = initializeFirebase(config);
+  if (initialized) {
+    showToast('✅ Firebase config saved!', 'ok');
+    document.getElementById('firebase-config-panel').classList.add('hidden');
+  } else {
+    showToast('❌ Failed to initialize Firebase', 'err');
+  }
+}
+
+function toggleFirebaseConfig() {
+  const panel = document.getElementById('firebase-config-panel');
+  panel.classList.toggle('hidden');
+  
+  const config = loadFirebaseConfig();
+  if (config) {
+    document.getElementById('firebase-project-id').value = config.projectId || '';
+    document.getElementById('firebase-bucket').value = config.storageBucket || '';
+    document.getElementById('firebase-api-key').value = config.apiKey || '';
+    document.getElementById('firebase-auth-domain').value = config.authDomain || '';
+    document.getElementById('firebase-messaging-sender-id').value = config.messagingSenderId || '';
+    document.getElementById('firebase-app-id').value = config.appId || '';
+    document.getElementById('firebase-measurement-id').value = config.measurementId || '';
+  }
+}
+
+async function testFirebaseConnection() {
+  const config = loadFirebaseConfig();
+  if (!config || !config.projectId) {
+    showToast('❌ Please configure Firebase first', 'err');
+    return;
+  }
+
+  const initialized = initializeFirebase(config);
+  if (!initialized) {
+    showToast('❌ Failed to initialize Firebase', 'err');
+    return;
+  }
+
+  try {
+    const db = getFirestore();
+    await db.collection('question-sets').limit(1).get();
+    showToast('✅ Connection successful!', 'ok');
+  } catch (e) {
+    showToast('❌ Connection failed: ' + e.message, 'err');
+  }
+}
+
+/* ══════════════════════════════════════════════
+   FIREBASE BACKUP & COPY
+ ══════════════════════════════════════════════ */
+function sanitizeFileName(name) {
+  return name.toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '');
+}
+
+function updateCopyButtonState() {
+  const set = getActiveQuestionSet();
+  const btn = document.getElementById('btn-copy-link');
+  if (set && set.firestoreId) {
+    btn.disabled = false;
+  } else {
+    btn.disabled = true;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   FIREBASE BACKUP & SHARE (FIRESTORE)
+ ══════════════════════════════════════════════ */
+async function backupQuestionSet() {
+  const config = loadFirebaseConfig();
+  if (!config || !config.projectId) {
+    showToast('❌ Please configure Firebase first', 'err');
+    toggleFirebaseConfig();
+    return;
+  }
+
+  const activeSet = getActiveQuestionSet();
+  if (!activeSet || !activeSet.questions || activeSet.questions.length === 0) {
+    showToast('❌ Cannot backup empty question set', 'err');
+    return;
+  }
+
+  try {
+    const initialized = initializeFirebase(config);
+    if (!initialized) {
+      throw new Error('Failed to initialize Firebase');
+    }
+
+    const db = getFirestore();
+    if (!db) {
+      throw new Error('Failed to get Firestore');
+    }
+
+    // Create or update document in question-sets collection
+    let docRef;
+    if (activeSet.firestoreId) {
+      // Update existing document
+      docRef = db.collection('question-sets').doc(activeSet.firestoreId);
+      await docRef.update({
+        name: activeSet.name,
+        questions: activeSet.questions,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } else {
+      // Create new document
+      docRef = await db.collection('question-sets').add({
+        name: activeSet.name,
+        questions: activeSet.questions,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+
+    activeSet.firestoreId = docRef.id;
+    activeSet.updatedAt = new Date().toISOString();
+    saveQuestionSetsToStorage();
+    
+    updateCopyButtonState();
+    refreshQuestionSetUI();
+    showToast('✅ Backup successful!', 'ok');
+  } catch (e) {
+    showToast('❌ Backup failed: ' + e.message, 'err');
+  }
+}
+
+async function copyFirestoreId() {
+  const activeSet = getActiveQuestionSet();
+  if (!activeSet || !activeSet.firestoreId) {
+    showToast('❌ No backup ID available', 'err');
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(activeSet.firestoreId);
+    showToast('📋 ID copied!', 'ok');
+  } catch (e) {
+    showToast('❌ Failed to copy: ' + e.message, 'err');
+  }
+}
+
+function validateFirestoreId(id) {
+  if (!id || typeof id !== 'string') {
+    return { valid: false, error: 'ID is empty' };
+  }
+  
+  id = id.trim();
+  
+  // Firestore document IDs are typically 20+ characters alphanumeric
+  if (id.length < 20) {
+    return { valid: false, error: 'Invalid document ID format' };
+  }
+  
+  // Basic alphanumeric check (Firestore IDs don't have special chars)
+  if (!/^[a-zA-Z0-9]+$/.test(id)) {
+    return { valid: false, error: 'Invalid document ID format' };
+  }
+  
+  return { valid: true, id };
+}
+
+function parseFirestoreData(data) {
+  if (!data || !data.questions || !Array.isArray(data.questions)) {
+    throw new Error('Invalid question set data');
+  }
+  
+  const questions = data.questions;
+  
+  if (questions.length === 0) {
+    throw new Error('Question set is empty');
+  }
+  
+  questions.forEach((item, i) => {
+    if (!item.word || !item.q || !Array.isArray(item.a) || item.c === undefined || !item.romaji) {
+      throw new Error(`Item ${i} is missing required fields`);
+    }
+  });
+  
+  return { questions, name: data.name || 'Imported Set' };
+}
+
+async function importFromFirestore() {
+  const idInput = document.getElementById('import-url-input');
+  const docId = idInput.value.trim();
+  
+  const validation = validateFirestoreId(docId);
+  if (!validation.valid) {
+    showToast('❌ ' + validation.error, 'err');
+    return;
+  }
+
+  try {
+    const config = loadFirebaseConfig();
+    if (!config || !config.projectId) {
+      throw new Error('Please configure Firebase first');
+    }
+
+    const initialized = initializeFirebase(config);
+    if (!initialized) {
+      throw new Error('Failed to initialize Firebase');
+    }
+
+    const db = getFirestore();
+    const docRef = db.collection('question-sets').doc(validation.id);
+    const docSnap = await docRef.get();
+
+    if (!docSnap.exists) {
+      throw new Error('Document not found');
+    }
+
+    const data = docSnap.data();
+    const { questions, name } = parseFirestoreData(data);
+    
+    const now = new Date().toISOString();
+    const newSet = {
+      id: 'set-' + Date.now(),
+      name: name,
+      questions: questions,
+      createdAt: now,
+      updatedAt: now,
+      firestoreId: validation.id
+    };
+    
+    questionSets.push(newSet);
+    activeSetId = newSet.id;
+    syncQuestionsFromActiveSet();
+    saveToStorage();
+    
+    idInput.value = '';
+    refreshQuestionSetUI();
+    refreshDataPreview();
+    updateMenuUI();
+    updateCopyButtonState();
+    
+    showToast(`✅ Imported ${questions.length} questions!`, 'ok');
+  } catch (e) {
+    showToast('❌ Import failed: ' + e.message, 'err');
   }
 }
