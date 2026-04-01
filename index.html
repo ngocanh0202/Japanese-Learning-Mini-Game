@@ -309,6 +309,18 @@
             </div>
           </div>
         </div>
+        <div class="setting-block">
+          <h3>📝 Question Limit</h3>
+          <label class="setting-row setting-toggle">
+            <span>Enable question limit per game</span>
+            <input type="checkbox" id="question-limit-enabled" class="toggle-input" onchange="updateSettingsFromUI()"/>
+            <span class="toggle-slider"></span>
+          </label>
+          <label class="setting-row">
+            <span>Max questions per game</span>
+            <input type="number" id="question-limit-value" class="setting-select" min="5" max="200" value="20" onchange="updateSettingsFromUI()" oninput="updateSettingsFromUI()"/>
+          </label>
+        </div>
       </div>
       <button class="back-btn" onclick="showScreen('screen-menu')">◀ BACK TO MENU</button>
     </div>

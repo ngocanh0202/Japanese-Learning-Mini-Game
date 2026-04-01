@@ -10,6 +10,9 @@ let flashUnknown = 0;
 
 function startFlash() {
   flashDeck = getPrioritizedDeck(questions, 'flash');
+  if (settings.questionLimitEnabled) {
+    flashDeck = flashDeck.slice(0, settings.questionLimit);
+  }
   flashIdx = 0;
   flashKnown = 0;
   flashUnknown = 0;

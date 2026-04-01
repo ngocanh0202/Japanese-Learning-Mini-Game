@@ -24,6 +24,8 @@ let settings = {
   scanlinesEnabled: true,
   disableGameOver: false,
   animationEnabled: true,
+  questionLimitEnabled: false,
+  questionLimit: 20,
   priority: {
     enabled: false,
     global: { incorrect: 5, timeSinceSeen: 3, learning: 2 },
@@ -603,6 +605,19 @@ function renderSettingsScreen() {
   document.getElementById('priority-incorrect-val').textContent = priorityIncorrect.value;
   document.getElementById('priority-time-val').textContent = priorityTime.value;
   document.getElementById('priority-learning-val').textContent = priorityLearning.value;
+  
+  const questionLimitEnabled = document.getElementById('question-limit-enabled');
+  const questionLimitValue = document.getElementById('question-limit-value');
+  if (questionLimitEnabled) questionLimitEnabled.checked = settings.questionLimitEnabled;
+  if (questionLimitValue) questionLimitValue.value = settings.questionLimit;
+  updateQuestionLimitUI();
+}
+
+function updateQuestionLimitUI() {
+  const questionLimitValue = document.getElementById('question-limit-value');
+  if (questionLimitValue) {
+    questionLimitValue.disabled = !settings.questionLimitEnabled;
+  }
 }
 
 function updateSettingsFromUI() {
@@ -635,6 +650,19 @@ function updateSettingsFromUI() {
   settings.priority.global.learning = parseInt(priorityLearning.value, 10);
   
   settings.animationEnabled = document.getElementById('animation-enabled').checked;
+  
+  const questionLimitEnabled = document.getElementById('question-limit-enabled');
+  const questionLimitValue = document.getElementById('question-limit-value');
+  if (questionLimitEnabled) {
+    settings.questionLimitEnabled = questionLimitEnabled.checked;
+  }
+  if (questionLimitValue) {
+    let val = parseInt(questionLimitValue.value, 10);
+    if (isNaN(val) || val < 5) val = 5;
+    if (val > 200) val = 200;
+    settings.questionLimit = val;
+  }
+  updateQuestionLimitUI();
   
   saveSettingsToStorage();
   applyScanlinesVisibility();

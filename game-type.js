@@ -30,6 +30,9 @@ function startTyping() {
   typeWrong = 0;
   fallingWords = [];
   typeDeck = getPrioritizedDeck(questions, 'type').map((q, idx) => ({ ...q, originalIndex: questions.indexOf(q) }));
+  if (settings.questionLimitEnabled) {
+    typeDeck = typeDeck.slice(0, settings.questionLimit);
+  }
   spawnTimer = 0;
   spawnInterval = getTypeSpawnInterval();
   gameSpeed = getTypeGameSpeed();

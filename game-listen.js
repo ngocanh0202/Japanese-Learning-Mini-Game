@@ -16,6 +16,9 @@ let listenWrong = 0;
 function startListen() {
   stopListenTimer();
   listenDeck = getPrioritizedDeck(questions, 'listen');
+  if (settings.questionLimitEnabled) {
+    listenDeck = listenDeck.slice(0, settings.questionLimit);
+  }
   listenIdx = 0;
   listenHP = 100;
   listenScore = 0;

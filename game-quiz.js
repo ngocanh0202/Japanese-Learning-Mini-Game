@@ -15,6 +15,9 @@ let quizWrong = 0;
 
 function startQuiz() {
   quizDeck = getPrioritizedDeck(questions, 'quiz');
+  if (settings.questionLimitEnabled) {
+    quizDeck = quizDeck.slice(0, settings.questionLimit);
+  }
   quizIdx = 0;
   quizHP = 100;
   quizScore = 0;

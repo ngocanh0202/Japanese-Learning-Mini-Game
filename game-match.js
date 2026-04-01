@@ -76,10 +76,14 @@ function renderMatchBoard() {
 }
 
 function startMatch() {
-  pairCount = Math.min(6, questions.length);
   const prioritizedItems = getPrioritizedDeck(questions, 'match');
-  const items = prioritizedItems.slice(0, pairCount);
-  matchCards = shuffle(items.flatMap((item, index) => ([
+  let items = prioritizedItems;
+  if (settings.questionLimitEnabled) {
+    items = items.slice(0, settings.questionLimit);
+  }
+  pairCount = Math.min(6, items.length);
+  const matchItems = items.slice(0, pairCount);
+  matchCards = shuffle(matchItems.flatMap((item, index) => ([
     { cardId: `word-${index}`, pairId: index, kind: 'word', text: item.word, revealed: false, matched: false, animating: false },
     { cardId: `label-${index}`, pairId: index, kind: 'label', text: getMatchLabel(item), revealed: false, matched: false, animating: false }
   ])));
