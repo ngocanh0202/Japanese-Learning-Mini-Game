@@ -1508,13 +1508,13 @@ textarea:focus { outline: none; border-color: var(--accent4); }
   }
 }
 
-/* ─── IMPORT FROM URL SECTION ─────────────────────── */
-.import-url-section {
+/* ─── IMPORT SECTION WITH TOGGLE ─────────────────────── */
+.import-section {
   margin: 16px 0;
   width: 100%;
 }
 
-.import-url-section > label {
+.import-section > label {
   display: block;
   margin-bottom: 8px;
   color: var(--accent4);
@@ -1522,11 +1522,47 @@ textarea:focus { outline: none; border-color: var(--accent4); }
   font-weight: 500;
 }
 
-.import-url-section .btn-row {
+.import-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.import-toggle input[type="radio"] {
+  display: none;
+}
+
+.import-toggle label {
+  padding: 6px 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: var(--radius);
+  transition: all 0.2s ease;
+}
+
+.import-toggle label:first-of-type {
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+
+.import-toggle label:last-of-type {
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.import-toggle input[type="radio"]:checked + label {
+  background: var(--accent4);
+  border-color: var(--accent4);
+  color: var(--text);
+}
+
+.import-section .btn-row {
   gap: 8px;
 }
 
-.import-url-section input[type="text"] {
+.import-section .import-input {
   flex: 1;
   padding: 8px 12px;
   background: var(--bg);
@@ -1537,17 +1573,7 @@ textarea:focus { outline: none; border-color: var(--accent4); }
   border-radius: var(--radius);
 }
 
-.import-url-section input[type="text"]:focus {
+.import-section .import-input:focus {
   outline: none;
   border-color: var(--accent4);
-}
-
-#btn-copy-link:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-#btn-copy-link:disabled:hover {
-  transform: none;
-  box-shadow: none;
 }

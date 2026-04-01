@@ -38,6 +38,7 @@ let settings = {
 };
 let questionStats = {};
 let currentScreen = '';
+let importMode = 'url';
 
 /* ── INIT ── */
 function adjustZoom() {
@@ -1560,29 +1561,253 @@ async function importFromFirestore() {
     const data = docSnap.data();
     const { questions, name } = parseFirestoreData(data);
     
-    const now = new Date().toISOString();
-    const newSet = {
-      id: 'set-' + Date.now(),
-      name: name,
-      questions: questions,
-      createdAt: now,
-      updatedAt: now,
-      firestoreId: validation.id
-    };
+    promptForSetName(name, (setName) => {
+      const now = new Date().toISOString();
+      const newSet = {
+        id: 'set-' + Date.now(),
+        name: setName,
+        questions: questions,
+        createdAt: now,
+        updatedAt: now,
+        firestoreId: validation.id
+      };
+      
+      questionSets.push(newSet);
+      activeSetId = newSet.id;
+      syncQuestionsFromActiveSet();
+      saveToStorage();
+      
+      idInput.value = '';
+      refreshQuestionSetUI();
+      refreshDataPreview();
+      updateMenuUI();
+      updateCopyButtonState();
+      
+      showToast(`✅ Imported ${questions.length} questions!`, 'ok');
+    });
     
-    questionSets.push(newSet);
-    activeSetId = newSet.id;
-    syncQuestionsFromActiveSet();
-    saveToStorage();
-    
-    idInput.value = '';
-    refreshQuestionSetUI();
-    refreshDataPreview();
-    updateMenuUI();
-    updateCopyButtonState();
-    
-    showToast(`✅ Imported ${questions.length} questions!`, 'ok');
   } catch (e) {
     showToast('❌ Import failed: ' + e.message, 'err');
+  }
+}
+
+/* ══════════════════════════════════════════════
+   DUAL IMPORT MODE (URL + ID)
+ ══════════════════════════════════════════════ */
+function toggleImportMode() {
+  const urlRadio = document.getElementById('import-url');
+  const input = document.getElementById('import-url-input');
+  
+  if (urlRadio.checked) {
+    importMode = 'url';
+    input.placeholder = 'Paste JSON URL here...';
+  } else {
+    importMode = 'id';
+    input.placeholder = 'Paste Firestore document ID here...';
+  }
+}
+
+function handleGetButton() {
+  const input = document.getElementById('import-url-input').value.trim();
+  
+  if (!input) {
+    showToast('❌ Please enter a value', 'err');
+    return;
+  }
+  
+  if (importMode === 'url') {
+    importFromGenericUrl();
+  } else {
+    importFromFirestore();
+  }
+}
+
+function validateGenericUrl(url) {
+  if (!url || typeof url !== 'string') {
+    return { valid: false, error: 'URL is empty' };
+  }
+  
+  url = url.trim();
+  
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    return { valid: false, error: 'Invalid URL format - must start with http:// or https://' };
+  }
+  
+  return { valid: true, url };
+}
+
+function isFirestoreResponse(data) {
+  try {
+    const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+    return parsed.fields && parsed.fields.questions && parsed.fields.questions.arrayValue;
+  } catch {
+    return false;
+  }
+}
+
+function parseFirestoreRestResponse(data) {
+  const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+  
+  if (!parsed.fields || !parsed.fields.questions) {
+    throw new Error('Invalid Firestore response structure');
+  }
+  
+  const questionsArray = parsed.fields.questions.arrayValue;
+  if (!questionsArray || !questionsArray.values) {
+    throw new Error('No questions in Firestore document');
+  }
+  
+  const questions = questionsArray.values.map((item, i) => {
+    if (!item.mapValue || !item.mapValue.fields) {
+      throw new Error(`Item ${i} has invalid structure`);
+    }
+    
+    const fields = item.mapValue.fields;
+    return {
+      word: fields.word?.stringValue,
+      romaji: fields.romaji?.stringValue,
+      translation: fields.translation?.stringValue,
+      q: fields.q?.stringValue,
+      a: fields.a?.arrayValue?.values?.map(v => v.stringValue) || [],
+      c: parseInt(fields.c?.integerValue || '0', 10),
+      ex: fields.ex?.stringValue
+    };
+  });
+  
+  if (questions.length === 0) {
+    throw new Error('Question array is empty');
+  }
+  
+  return questions;
+}
+
+function parseGenericJson(data) {
+  if (!data) {
+    throw new Error('Empty response from URL');
+  }
+  
+  const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+  
+  // Detect Firestore REST format
+  if (isFirestoreResponse(parsed)) {
+    return parseFirestoreRestResponse(parsed);
+  }
+  
+  // Regular JSON array format
+  if (!Array.isArray(parsed) || parsed.length === 0) {
+    throw new Error('JSON must be an array with at least one question');
+  }
+  
+  parsed.forEach((item, i) => {
+    if (!item.word || !item.q || !Array.isArray(item.a) || item.c === undefined || !item.romaji) {
+      throw new Error(`Item ${i} is missing required fields`);
+    }
+  });
+  
+  return parsed;
+}
+
+function promptForSetName(defaultName, callback) {
+  const name = prompt('Enter name for this question set:', defaultName);
+  if (!name || !name.trim()) {
+    showToast('❌ Import cancelled', 'err');
+    return null;
+  }
+  return callback(name.trim());
+}
+
+async function importFromGenericUrl() {
+  const urlInput = document.getElementById('import-url-input');
+  const url = urlInput.value.trim();
+  
+  const validation = validateGenericUrl(url);
+  if (!validation.valid) {
+    showToast('❌ ' + validation.error, 'err');
+    return;
+  }
+
+  try {
+    const response = await fetch(validation.url);
+    if (!response.ok) {
+      throw new Error('Failed to fetch URL');
+    }
+    
+    const text = await response.text();
+    if (!text || text.trim() === '') {
+      throw new Error('Empty response from URL');
+    }
+    
+    const questions = parseGenericJson(text);
+    
+    let suggestedName = 'Imported Set';
+    try {
+      const urlObj = new URL(validation.url);
+      const pathParts = urlObj.pathname.split('/');
+      const fileName = pathParts[pathParts.length - 1];
+      if (fileName && fileName.endsWith('.json')) {
+        suggestedName = fileName.replace('.json', '').replace(/_/g, ' ');
+      }
+    } catch (e) {
+    }
+    
+    const result = promptForSetName(suggestedName, (name) => {
+      const now = new Date().toISOString();
+      const newSet = {
+        id: 'set-' + Date.now(),
+        name: name,
+        questions: questions,
+        createdAt: now,
+        updatedAt: now
+      };
+      
+      questionSets.push(newSet);
+      activeSetId = newSet.id;
+      syncQuestionsFromActiveSet();
+      saveToStorage();
+      
+      urlInput.value = '';
+      refreshQuestionSetUI();
+      refreshDataPreview();
+      updateMenuUI();
+      
+      showToast(`✅ Imported ${questions.length} questions!`, 'ok');
+    });
+    
+  } catch (e) {
+    showToast('❌ Import failed: ' + e.message, 'err');
+  }
+}
+
+function generateFirestoreUrl(docId) {
+  const config = loadFirebaseConfig();
+  if (!config || !config.projectId) {
+    return null;
+  }
+  
+  const projectId = config.projectId;
+  return `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/question-sets/${docId}`;
+}
+
+function copyButtonHandler() {
+  const activeSet = getActiveQuestionSet();
+  
+  if (!activeSet || !activeSet.firestoreId) {
+    showToast('❌ Question set not backed up', 'err');
+    return;
+  }
+  
+  const config = loadFirebaseConfig();
+  if (!config || !config.projectId) {
+    showToast('❌ Please configure Firebase first', 'err');
+    return;
+  }
+  
+  const url = generateFirestoreUrl(activeSet.firestoreId);
+  if (url) {
+    navigator.clipboard.writeText(url).then(() => {
+      showToast('📋 URL copied!', 'ok');
+    }).catch(e => {
+      showToast('❌ Failed to copy: ' + e.message, 'err');
+    });
   }
 }

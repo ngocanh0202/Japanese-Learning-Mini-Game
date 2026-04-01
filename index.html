@@ -107,7 +107,7 @@
           <button class="action-btn btn-secondary" onclick="promptRenameQuestionSet()">✏️ RENAME</button>
           <button class="action-btn btn-danger" onclick="deleteActiveQuestionSet()">🗑 DELETE</button>
           <button class="action-btn" id="btn-backup" onclick="backupQuestionSet()">☁️ BACKUP</button>
-          <button class="action-btn btn-secondary" id="btn-copy-link" onclick="copyFirestoreId()">📋 COPY ID</button>
+          <button class="action-btn btn-secondary" id="btn-copy-link" onclick="copyButtonHandler()">📋 COPY</button>
         </div>
       </div>
       <div class="form-group">
@@ -165,11 +165,17 @@
           </div>
         </div>
       </div>
-      <div class="import-url-section">
-        <label>☁️ IMPORT FROM ID</label>
+      <div class="import-section">
+        <label>☁️ IMPORT</label>
+        <div class="import-toggle">
+          <input type="radio" id="import-url" name="import-mode" value="url" checked onchange="toggleImportMode()" />
+          <label for="import-url">URL</label>
+          <input type="radio" id="import-id" name="import-mode" value="id" onchange="toggleImportMode()" />
+          <label for="import-id">ID</label>
+        </div>
         <div class="btn-row">
-          <input id="import-url-input" type="text" placeholder="Paste Firestore document ID here..." />
-          <button class="action-btn" onclick="importFromFirestore()">GET</button>
+          <input id="import-url-input" type="text" class="import-input" placeholder="Paste JSON URL here..." />
+          <button class="action-btn" onclick="handleGetButton()">GET</button>
         </div>
       </div>
       <div id="data-status" class="status-msg"></div>
