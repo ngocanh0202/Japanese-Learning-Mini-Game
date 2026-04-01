@@ -10,6 +10,8 @@ let quizCombo = 0;
 let quizTimeLeft = 0;
 let quizTimerInterval = null;
 let quizDelayTimeout = null;
+let quizCorrect = 0;
+let quizWrong = 0;
 
 function startQuiz() {
   quizDeck = getPrioritizedDeck(questions, 'quiz');
@@ -17,6 +19,8 @@ function startQuiz() {
   quizHP = 100;
   quizScore = 0;
   quizCombo = 0;
+  quizCorrect = 0;
+  quizWrong = 0;
   quizTimeLeft = settings.quizTimeLimit;
   stopQuizTimer();
   showScreen('screen-quiz');
@@ -65,6 +69,7 @@ function answerQuiz(chosen, btn, q) {
 
   if (correct) {
     quizCombo++;
+    quizCorrect++;
     const pts = 10 * Math.max(1, quizCombo);
     quizScore += pts;
     playerEXP += pts;
@@ -74,6 +79,7 @@ function answerQuiz(chosen, btn, q) {
   } else {
     btn.classList.add('wrong');
     quizCombo = 0;
+    quizWrong++;
     if (!settings.disableGameOver) {
       quizHP = Math.max(0, quizHP - 20);
     }
@@ -93,7 +99,7 @@ function answerQuiz(chosen, btn, q) {
 
   if (!settings.disableGameOver && quizHP <= 0) {
     showToast('💀 Out of health! Game over.', 'err')
-    gameOver(quizScore, quizCombo, 'quiz');
+    gameOver(quizScore, quizCombo, 'quiz', quizCorrect, quizWrong);
     //setTimeout(() => { showToast('💀 Out of health! Game over.', 'err'); quizComplete(); }, 1000);
   }
 }
@@ -109,6 +115,7 @@ function quizComplete() {
     playerHP = Math.max(0, playerHP - (100 - quizHP));
   }
   playerCombo = Math.max(playerCombo, quizCombo);
+  gameOver(quizScore, quizCombo, 'quiz', quizCorrect, quizWrong);
   saveToStorage();
   showToast(`🎉 Complete! Score: ${quizScore}`, 'info');
   setTimeout(() => showScreen('screen-menu'), 800);
@@ -185,8 +192,8 @@ function handleQuizTimeout() {
   document.getElementById('quiz-next').classList.remove('hidden');
 
   if (!settings.disableGameOver && quizHP <= 0) {
-    showToast('💀 Time’s up! Game over.', 'err');
-    gameOver(quizScore, quizCombo, 'quiz');
+    showToast('Time\x27s up! Game over.', 'err');
+    gameOver(quizScore, quizCombo, 'quiz', quizCorrect, quizWrong);
     // quizDelayTimeout = setTimeout(() => {
     //   quizComplete();
     //   quizDelayTimeout = null;

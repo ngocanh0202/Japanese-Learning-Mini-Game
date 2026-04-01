@@ -55,6 +55,7 @@ function markCard(known) {
 }
 
 function flashComplete() {
+  gameOver(flashKnown * 5, 0, 'flash', flashKnown, flashUnknown);
   saveToStorage();
   showToast(`📚 Complete! ✅${flashKnown}  ❌${flashUnknown}`, 'info');
   setTimeout(() => showScreen('screen-menu'), 1000);

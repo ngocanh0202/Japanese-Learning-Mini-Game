@@ -37,6 +37,7 @@ let settings = {
   }
 };
 let questionStats = {};
+let sessionHistory = [];
 let currentScreen = '';
 let importMode = 'url';
 
@@ -56,6 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadSettingsFromStorage();
   loadFromStorage();
   loadQuestionStats();
+  loadSessionHistory();
   applyScanlinesVisibility();
   updateAnimationBodyClass();
   
@@ -265,6 +267,21 @@ function loadQuestionStats() {
 
 function saveQuestionStats() {
   localStorage.setItem('jq_question_stats', JSON.stringify(questionStats));
+}
+
+function loadSessionHistory() {
+  const stored = localStorage.getItem('jq_session_history');
+  if (stored) {
+    try {
+      sessionHistory = JSON.parse(stored);
+    } catch (e) {
+      sessionHistory = [];
+    }
+  }
+}
+
+function saveSessionHistory() {
+  localStorage.setItem('jq_session_history', JSON.stringify(sessionHistory));
 }
 
 function initQuestionStats(questionsArr) {
@@ -1216,7 +1233,21 @@ const dictionaryGame = {
   }
 }
 
-function gameOver(score, combo, type) {
+function gameOver(score, combo, type, correct = 0, wrong = 0) {
+  const session = {
+    id: `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    type: type,
+    score: score,
+    correct: correct,
+    wrong: wrong,
+    timestamp: new Date().toISOString()
+  };
+  sessionHistory.unshift(session);
+  if (sessionHistory.length > 20) {
+    sessionHistory.pop();
+  }
+  saveSessionHistory();
+
   if (settings.disableGameOver) {
     playerCombo = Math.max(playerCombo, combo);
     playerEXP += score;
@@ -1316,6 +1347,7 @@ function saveGamePrioritySettings() {
 }
 
 function renderStatsScreen() {
+  loadSessionHistory();
   const { totalCorrect, totalWrong, gameTypeStats } = computeTotalStats();
   const totalAnswers = totalCorrect + totalWrong;
   const overallAccuracy = totalAnswers > 0 ? Math.round((totalCorrect / totalAnswers) * 100) : 0;
@@ -1347,7 +1379,35 @@ function renderStatsScreen() {
   
   const historyEl = document.getElementById('stats-history');
   if (historyEl) {
-    historyEl.innerHTML = '<div class="stats-empty">No sessions recorded yet.</div>';
+    if (sessionHistory.length === 0) {
+      historyEl.innerHTML = '<div class="stats-empty">No sessions recorded yet.</div>';
+    } else {
+      const sortedSessions = [...sessionHistory].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      const gameIcons = { quiz: '📝', listen: '🎧', flash: '🃏', match: '🧩', type: '⌨' };
+      let historyHtml = '<div class="session-history-list">';
+      sortedSessions.forEach(session => {
+        const total = session.correct + session.wrong;
+        const accuracy = total > 0 ? Math.round((session.correct / total) * 100) : 0;
+        const date = new Date(session.timestamp);
+        const formattedDate = date.toLocaleDateString('vi-VN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const icon = gameIcons[session.type] || '🎮';
+        const accuracyColor = accuracy >= 80 ? '#30d158' : accuracy >= 50 ? '#ffd60a' : '#ff2d55';
+        historyHtml += `
+          <div class="session-history-item">
+            <div class="session-history-icon">${icon}</div>
+            <div class="session-history-info">
+              <div class="session-history-type">${gameNames[session.type] || session.type}</div>
+              <div class="session-history-date">${formattedDate}</div>
+            </div>
+            <div class="session-history-stats">
+              <div class="session-history-score">+${session.score} ⭐</div>
+              <div class="session-history-accuracy" style="color: ${accuracyColor}">${session.correct}/${total} (${accuracy}%)</div>
+            </div>
+          </div>`;
+      });
+      historyHtml += '</div>';
+      historyEl.innerHTML = historyHtml;
+    }
   }
   
   const summaryEl = document.getElementById('stats-summary');

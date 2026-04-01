@@ -10,6 +10,8 @@ let pairCount = 0;
 let matchTimeLeft = 0;
 let matchTimerInterval = null;
 let matchActive = false;
+let matchCorrect = 0;
+let matchWrong = 0;
 
 function getMatchLabel(item) {
   return item.translation || item.romaji || item.word || item.q || '---';
@@ -58,7 +60,7 @@ function endMatchByTime() {
   } else {
     showToast("⏱ Time's up!", 'err');
     setTimeout(() => {
-      gameOver(Math.round((matchFound / matchAttempts) || 0), 0, 'match');
+      gameOver(Math.round((matchFound / matchAttempts) || 0), 0, 'match', matchCorrect, matchWrong);
     }, 1500);
   }
 }
@@ -84,6 +86,8 @@ function startMatch() {
   matchSelection = [];
   matchAttempts = 0;
   matchFound = 0;
+  matchCorrect = 0;
+  matchWrong = 0;
   matchActive = true;
   matchTimeLeft = settings.matchTimeLimit;
   showScreen('screen-match');
@@ -108,6 +112,7 @@ function handleMatchCard(cardId) {
       first.animating = second.animating = true;
       renderMatchBoard();
       matchFound++;
+      matchCorrect++;
       matchSelection = [];
       updateQuestionStats(first.pairId, 'match', true);
       showToast('✅ Correct match!', 'ok');
@@ -117,11 +122,15 @@ function handleMatchCard(cardId) {
         second.animating = false;
         renderMatchBoard();
       }, 600);
-      if (matchFound === pairCount) {        stopMatchTimer();
-        matchActive = false;        setTimeout(() => showToast('🎉 You completed the game!', 'info'), 300);
+      if (matchFound === pairCount) {        
+        stopMatchTimer();
+        matchActive = false;
+        gameOver(Math.round((matchFound / matchAttempts) || 0), 0, 'match', matchCorrect, matchWrong);
+        setTimeout(() => showToast('🎉 You completed the game!', 'info'), 300);
         saveToStorage();
       }
     } else {
+      matchWrong++;
       updateQuestionStats(first.pairId, 'match', false);
       setTimeout(() => {
         first.revealed = false;

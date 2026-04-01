@@ -10,6 +10,8 @@ let listenCombo = 0;
 let listenTimeLeft = 0;
 let listenTimerInterval = null;
 let listenDelayTimeout = null;
+let listenCorrect = 0;
+let listenWrong = 0;
 
 function startListen() {
   stopListenTimer();
@@ -18,6 +20,8 @@ function startListen() {
   listenHP = 100;
   listenScore = 0;
   listenCombo = 0;
+  listenCorrect = 0;
+  listenWrong = 0;
   showScreen('screen-listen');
   renderListen();
 }
@@ -102,6 +106,7 @@ function answerListen(choice, btn, q) {
   if (isCorrect) {
     btn.classList.add('correct');
     listenCombo++;
+    listenCorrect++;
     const points = 10 * Math.max(1, listenCombo);
     listenScore += points;
     playerEXP += points;
@@ -113,6 +118,7 @@ function answerListen(choice, btn, q) {
       listenHP = Math.max(0, listenHP - 20);
     }
     listenCombo = 0;
+    listenWrong++;
     updateQuestionStats(listenIdx, 'listen', false);
     showToast('❌ Wrong answer!', 'err');
     document.getElementById('screen-listen').classList.add('shake');
@@ -230,6 +236,7 @@ function nextListen() {
 
 function listenComplete() {
   stopListenTimer();
+  gameOver(listenScore, listenCombo, 'listen', listenCorrect, listenWrong);
   playerCombo = Math.max(playerCombo, listenCombo);
   saveToStorage();
   showToast(`🎧 Listening Quiz complete! Score: ${listenScore}`, 'info');
@@ -238,6 +245,7 @@ function listenComplete() {
 
 function showListenGameOver() {
   stopListenTimer();
+  gameOver(listenScore, listenCombo, 'listen', listenCorrect, listenWrong);
   const el = document.getElementById('listen-go-score');
   if (el) el.textContent = listenScore;
   document.getElementById('listen-gameover')?.classList.remove('hidden');

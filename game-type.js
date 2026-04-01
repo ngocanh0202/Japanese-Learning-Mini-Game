@@ -7,6 +7,8 @@ let fallingWords = [];
 let typeHP = 100;
 let typeScore = 0;
 let typeCombo = 0;
+let typeCorrect = 0;
+let typeWrong = 0;
 let typeInput = '';
 let typeDeck = [];
 let spawnTimer = 0;
@@ -24,6 +26,8 @@ function startTyping() {
   typeHP = 100;
   typeScore = 0;
   typeCombo = 0;
+  typeCorrect = 0;
+  typeWrong = 0;
   fallingWords = [];
   typeDeck = getPrioritizedDeck(questions, 'type').map((q, idx) => ({ ...q, originalIndex: questions.indexOf(q) }));
   spawnTimer = 0;
@@ -128,6 +132,7 @@ function typeGameLoop() {
       if (!settings.disableGameOver) {
         typeHP = Math.max(0, typeHP - 15);
         typeCombo = 0;
+        typeWrong++;
         updateTypeHUD();
         shakeScreen();
       }
@@ -208,6 +213,7 @@ function onTypeInput(e) {
   
   if (wanakana.toHiragana(val.trim().toLowerCase()) === wanakana.toHiragana(target.romaji.trim().toLowerCase())) {
     typeCombo++;
+    typeCorrect++;
     const pts = 10 * Math.max(1, typeCombo);
     typeScore += pts;
     playerEXP += pts;
@@ -239,8 +245,8 @@ function updateTypeHUD() {
 function gameOverTyping(score, combo) {
   cancelAnimationFrame(typingLoop);
   typingLoop = null;
+  gameOver(score, combo, 'type', typeCorrect, typeWrong);
   saveToStorage();
-  gameOver(score, combo, 'type');
 }
 
 function shakeScreen() {
