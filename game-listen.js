@@ -94,7 +94,7 @@ function playListenAudio(text) {
     status.textContent = '🔊 Playing audio...';
   };
   utterance.onend = () => {
-    status.textContent = '🔊 Audio played. Choose the correct reading.';
+    status.textContent = 'Listen to the Japanese word, then choose the correct reading.';
   };
   utterance.onerror = () => {
     status.textContent = '❌ Audio playback failed.';
