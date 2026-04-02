@@ -441,15 +441,15 @@
     </div>
     <div class="hp-bar-wrap"><div class="hp-bar-inner" id="listen-hpbar"></div></div>
     <div class="listen-container">
-      <div class="question-card" id="listen-instruction">
+      <div class="question-card" id="listen-instruction" style="position: relative;">
         <div id="listen-audio-status" class="status-msg" style="font-size: 12px;"></div>
+        <button class="action-btn btn-green btn-sm hidden" id="listen-practice-writing" onclick="showWritePracticeModal(this.dataset.word, this.dataset.romaji, this.dataset.translation)" style="position: absolute; bottom: 8px; right: 8px;">✍️ Practice</button>
       </div>
       <div class="btn-row" style="justify-content: center; margin: 12px 0 0;">
         <button class="action-btn btn-secondary" onclick="replayListenAudio()">🔊 Play again</button>
       </div>
       <div class="choices-grid" id="listen-choices" style="margin-top: 16px;"></div>
       <div class="explanation-box hidden" id="listen-explanation" style="margin-top: 16px;"></div>
-      <button class="action-btn btn-green btn-sm hidden" id="listen-practice-writing" onclick="showWritePracticeModal(this.dataset.word, this.dataset.romaji, this.dataset.translation)" style="margin-top: 8px;">✍️ Practice</button>
       <button class="next-btn hidden" id="listen-next" onclick="nextListen()">Next ▶</button>
     </div>
     <div class="gameover-overlay hidden" id="listen-gameover">
@@ -478,13 +478,15 @@
     <div class="hp-bar-wrap"><div class="hp-bar-inner" id="quiz-hpbar"></div></div>
 
     <div class="quiz-container">
-      <div class="question-card" id="quiz-question">Loading...</div>
+      <div class="question-card" id="quiz-question" style="position: relative;">
+        Loading...
+        <button class="action-btn btn-green btn-sm hidden" id="quiz-practice-writing" onclick="showWritePracticeModal(this.dataset.word, this.dataset.romaji, this.dataset.translation)" style="position: absolute; bottom: 8px; right: 8px;">✍️ Practice</button>
+      </div>
       <div class="progress-info">
         <span id="quiz-progress">0 / 0</span>
       </div>
       <div class="choices-grid" id="quiz-choices"></div>
       <div class="explanation-box hidden" id="quiz-explanation"></div>
-      <button class="action-btn btn-green btn-sm hidden" id="quiz-practice-writing" onclick="showWritePracticeModal(this.dataset.word, this.dataset.romaji, this.dataset.translation)">✍️ Practice</button>
       <button class="next-btn hidden" id="quiz-next" onclick="nextQuiz()">Next ▶</button>
     </div>
   </div>

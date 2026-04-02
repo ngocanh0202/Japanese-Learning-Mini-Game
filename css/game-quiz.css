@@ -10,6 +10,8 @@
   flex: 1; min-height: 0;
 }
 
+#quiz-question { position: relative; min-height: 100px; }
+
 .question-card {
   background: var(--panel);
   border: 2px solid var(--accent4);
