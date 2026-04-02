@@ -252,6 +252,10 @@ const dictionaryGame = {
 function gameOver(score, combo, type, correct, wrong, completed = false) {
   if (completed) {
     recordSession(type, score, correct, wrong);
+    playerCombo = Math.max(playerCombo, combo);
+    playerEXP += score;
+    saveToStorage();
+    return;
   }
 
   if (settings.disableGameOver) {
@@ -268,7 +272,7 @@ function gameOver(score, combo, type, correct, wrong, completed = false) {
   
   const goTitle = document.getElementById('go-title');
   if (goTitle) {
-    goTitle.textContent = completed ? '🎉 COMPLETE!' : 'GAME OVER';
+    goTitle.textContent = 'GAME OVER';
   }
   document.getElementById('go-score').textContent = score;
   document.getElementById('modal-gameover').classList.remove('hidden');
