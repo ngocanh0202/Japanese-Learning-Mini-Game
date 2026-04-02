@@ -29,6 +29,8 @@ function startListen() {
   renderListen();
 }
 
+let listenQuestionStartTime = 0;
+
 function renderListen() {
   const container = document.getElementById('screen-listen');
   if (!container) return;
@@ -38,10 +40,15 @@ function renderListen() {
   }
 
   const q = listenDeck[listenIdx];
+  listenQuestionStartTime = Date.now();
   document.getElementById('listen-progress').textContent = `${listenIdx + 1} / ${listenDeck.length}`;
   document.getElementById('listen-audio-status').textContent = '';
   document.getElementById('listen-explanation').classList.add('hidden');
   document.getElementById('listen-next').classList.add('hidden');
+  
+  const practiceBtn = document.getElementById('listen-practice-writing');
+  if (practiceBtn) practiceBtn.classList.add('hidden');
+  
   updateListenHUD();
   if (settings.quizTimerEnabled) {
     startListenTimer();
@@ -52,12 +59,13 @@ function renderListen() {
   const choices = document.getElementById('listen-choices');
   choices.innerHTML = '';
 
-  q.a.forEach((answer, index) => {
+  const { options, correctIndex } = shuffleAnswerOptions(q);
+  options.forEach((answer, index) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'choice-btn listen-choice-btn';
     btn.textContent = answer;
-    btn.onclick = () => answerListen(index, btn, q);
+    btn.onclick = () => answerListen(index, btn, q, correctIndex);
     choices.appendChild(btn);
   });
 
@@ -100,20 +108,21 @@ function replayListenAudio() {
   playListenAudio(q.word);
 }
 
-function answerListen(choice, btn, q) {
+function answerListen(choice, btn, q, correctIndex) {
   stopListenTimer();
+  const responseTime = Date.now() - listenQuestionStartTime;
   const buttons = document.querySelectorAll('.listen-choice-btn');
   buttons.forEach(b => b.disabled = true);
 
-  const isCorrect = choice === q.c;
+  const isCorrect = choice === correctIndex;
   if (isCorrect) {
     btn.classList.add('correct');
     listenCombo++;
     listenCorrect++;
-    const points = 10 * Math.max(1, listenCombo);
+    const points = Math.floor(BASE_XP_REWARD * Math.max(1, listenCombo) * 1.5);
     listenScore += points;
     playerEXP += points;
-    updateQuestionStats(listenIdx, 'listen', true);
+    updateQuestionStats(listenIdx, 'listen', true, responseTime);
     showToast(`✅ Correct! +${points} EXP`, 'ok');
   } else {
     btn.classList.add('wrong');
@@ -122,13 +131,21 @@ function answerListen(choice, btn, q) {
     }
     listenCombo = 0;
     listenWrong++;
-    updateQuestionStats(listenIdx, 'listen', false);
+    updateQuestionStats(listenIdx, 'listen', false, responseTime);
     showToast('❌ Wrong answer!', 'err');
     document.getElementById('screen-listen').classList.add('shake');
     setTimeout(() => document.getElementById('screen-listen').classList.remove('shake'), 400);
+    
+    const practiceBtn = document.getElementById('listen-practice-writing');
+    if (practiceBtn) {
+      practiceBtn.dataset.word = q.word;
+      practiceBtn.dataset.romaji = q.romaji;
+      practiceBtn.dataset.translation = q.translation;
+      practiceBtn.classList.remove('hidden');
+    }
   }
 
-  const correctButton = buttons[q.c];
+  const correctButton = buttons[correctIndex];
   if (correctButton) correctButton.classList.add('correct');
 
   const explanation = document.getElementById('listen-explanation');
@@ -239,10 +256,14 @@ function nextListen() {
 
 function listenComplete() {
   stopListenTimer();
-  gameOver(listenScore, listenCombo, 'listen', listenCorrect, listenWrong);
+  gameOver(listenScore, listenCombo, 'listen', listenCorrect, listenWrong, true);
   playerCombo = Math.max(playerCombo, listenCombo);
   saveToStorage();
-  showToast(`🎧 Listening Quiz complete! Score: ${listenScore}`, 'info');
+  showToast(`🎉 Complete! Score: ${listenScore}`, 'ok');
+  if (gameStartTime) {
+    const elapsed = (Date.now() - gameStartTime) / 60000;
+    recordPlayTime(elapsed);
+  }
   setTimeout(() => showScreen('screen-menu'), 800);
 }
 

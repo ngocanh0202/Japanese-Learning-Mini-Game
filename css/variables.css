@@ -1,0 +1,51 @@
+/* ================================================
+   CSS Variables & Reset
+   ================================================ */
+:root {
+  --bg:        #0a0a12;
+  --bg2:       #12121e;
+  --panel:     #16162a;
+  --border:    #2a2a4a;
+  --accent:    #ff2d55;
+  --accent2:   #ffd60a;
+  --accent3:   #30d158;
+  --accent4:   #0a84ff;
+  --accent5:   #bf5af2;
+  --accent6:   #5ad4f2;
+  --accent7:   #ff00c8;
+  --text:      #e8e8ff;
+  --text-dim:  #6e6e9a;
+  --hp-color:  #ff2d55;
+  --exp-color: #ffd60a;
+  --glow-r:    0 0 12px rgba(255,45,85,.7);
+  --glow-y:    0 0 12px rgba(255,214,10,.7);
+  --glow-g:    0 0 12px rgba(48,209,88,.7);
+  --glow-b:    0 0 12px rgba(10,132,255,.7);
+  --glow-accent: 0 0 20px var(--accent-glow);
+  --accent-glow: rgba(255, 45, 85, 0.5);
+  --font-px:   'Press Start 2P', monospace;
+  --font-jp:   'Noto Sans JP', sans-serif;
+  --radius:    4px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --scrollbar-track: #1a1a2e;
+  --scrollbar-thumb: #3a3a5a;
+  --scrollbar-thumb-hover: #4a4a6a;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-jp);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); border-radius: var(--radius-md); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: var(--radius-md); border: 2px solid var(--scrollbar-track); transition: background 0.2s ease; }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
+::-webkit-scrollbar-corner { background: var(--scrollbar-track); }

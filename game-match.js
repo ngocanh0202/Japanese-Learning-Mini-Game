@@ -81,7 +81,7 @@ function startMatch() {
   if (settings.questionLimitEnabled) {
     items = items.slice(0, settings.questionLimit);
   }
-  pairCount = Math.min(6, items.length);
+  pairCount = Math.min(settings.matchPairCount || 6, items.length);
   const matchItems = items.slice(0, pairCount);
   matchCards = shuffle(matchItems.flatMap((item, index) => ([
     { cardId: `word-${index}`, pairId: index, kind: 'word', text: item.word, revealed: false, matched: false, animating: false },
@@ -129,9 +129,13 @@ function handleMatchCard(cardId) {
       if (matchFound === pairCount) {        
         stopMatchTimer();
         matchActive = false;
-        gameOver(Math.round((matchFound / matchAttempts) || 0), 0, 'match', matchCorrect, matchWrong);
-        setTimeout(() => showToast('🎉 You completed the game!', 'info'), 300);
+        gameOver(Math.round((matchFound / matchAttempts) || 0), 0, 'match', matchCorrect, matchWrong, true);
+        setTimeout(() => showToast('🎉 Complete!', 'ok'), 300);
         saveToStorage();
+        if (gameStartTime) {
+          const elapsed = (Date.now() - gameStartTime) / 60000;
+          recordPlayTime(elapsed);
+        }
       }
     } else {
       matchWrong++;

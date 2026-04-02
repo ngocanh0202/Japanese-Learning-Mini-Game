@@ -1,0 +1,46 @@
+/* ================================================
+   Typing Game Styles
+   ================================================ */
+
+#screen-type { align-items: center; }
+.type-container { width: 100%; max-width: 700px; display: flex; flex-direction: column; gap: 12px; }
+#type-canvas { width: 100%; height: min(380px, 45vh); border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg2); display: block; }
+.type-input-wrap { display: flex; gap: 12px; align-items: center; }
+
+/* Match Game */
+.tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+  width: 100%;
+}
+.tile-card {
+  background: var(--panel);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  min-height: 100px;
+  padding: 16px;
+  display: flex; align-items: center; justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  transition: transform .15s ease, border-color .2s ease, background .2s ease;
+  font-family: var(--font-jp); font-size: 14px; color: var(--text);
+}
+.tile-card:hover { transform: translateY(-2px); }
+.tile-card.revealed, .tile-card.matched { background: rgba(48, 86, 179, .12); border-color: var(--accent4); }
+.tile-card.matched { border-color: var(--accent3); }
+.match-animation { animation: matchSuccess 0.6s ease forwards; }
+.tile-card.match-wrong { border-color: var(--accent); animation: matchWrong 0.6s ease; }
+.tile-card.clicked { animation: cardClick 0.3s ease; }
+.tile-card.entering { animation: cardEnter 0.5s ease forwards; opacity: 0; }
+
+@keyframes cardClick { 0% { transform: scale(1); } 50% { transform: scale(0.95); } 100% { transform: scale(1); } }
+@keyframes matchSuccess { 0% { transform: scale(1); box-shadow: none; } 50% { transform: scale(1.08); box-shadow: 0 0 20px var(--accent3); } 100% { transform: scale(1); box-shadow: 0 0 15px var(--accent3); } }
+@keyframes matchWrong { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+@keyframes cardEnter { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
+
+.timer-display {
+  font-family: var(--font-px); font-size: 9px; color: var(--text-dim);
+  text-align: center; margin-top: 12px;
+}

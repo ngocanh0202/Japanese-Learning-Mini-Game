@@ -1,0 +1,36 @@
+/* ================================================
+   Game HUD Styles
+   ================================================ */
+
+/* Game HUD */
+.game-hud {
+  width: 100%; max-width: 700px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  justify-content: space-between;
+  padding: 10px 0 6px;
+}
+.hud-back {
+  font-family: var(--font-px); font-size: 9px;
+  background: none; color: var(--text-dim); border: 1px solid var(--border);
+  padding: 6px 10px; border-radius: var(--radius);
+  cursor: pointer; flex-shrink: 0; transition: all .15s;
+}
+.hud-back:hover { color: var(--accent); border-color: var(--accent); }
+.hud-title { font-family: var(--font-px); font-size: 9px; color: var(--accent2); flex: 1; }
+.hud-stats {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  font-family: var(--font-px); font-size: 8px;
+  color: var(--text);
+}
+
+.hp-bar-wrap {
+  width: 100%; max-width: 700px;
+  height: 6px; background: rgba(255,255,255,.06);
+  border-radius: 3px; overflow: hidden; margin-bottom: 16px;
+}
+.hp-bar-inner {
+  height: 100%; width: 100%;
+  background: linear-gradient(90deg, #c0392b, var(--accent));
+  transition: width .4s ease;
+  box-shadow: var(--glow-r);
+}

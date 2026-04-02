@@ -8,6 +8,8 @@ let flashKnown = 0;
 let flashUnknown = 0;
 
 
+let flashQuestionStartTime = 0;
+
 function startFlash() {
   flashDeck = getPrioritizedDeck(questions, 'flash');
   if (settings.questionLimitEnabled) {
@@ -32,6 +34,7 @@ function renderCard() {
   }
 
   const q = flashDeck[flashIdx];
+  flashQuestionStartTime = Date.now();
   document.getElementById('card-word').textContent = q.word;
   document.getElementById('card-reading').textContent = q.a[q.c];
   document.getElementById('card-explanation').textContent = q.ex || '';
@@ -45,22 +48,27 @@ function flipCard() {
 }
 
 function markCard(known) {
+  const responseTime = Date.now() - flashQuestionStartTime;
   if (known) {
     flashKnown++;
-    playerEXP += 5;
-    updateQuestionStats(flashIdx, 'flash', true);
+    playerEXP += Math.floor(BASE_XP_REWARD * 1.5);
+    updateQuestionStats(flashIdx, 'flash', true, responseTime);
   } else {
     flashUnknown++;
-    updateQuestionStats(flashIdx, 'flash', false);
+    updateQuestionStats(flashIdx, 'flash', false, responseTime);
   }
   flashIdx++;
   renderCard();
 }
 
 function flashComplete() {
-  gameOver(flashKnown * 5, 0, 'flash', flashKnown, flashUnknown);
+  gameOver(flashKnown * 5, 0, 'flash', flashKnown, flashUnknown, true);
   saveToStorage();
-  showToast(`📚 Complete! ✅${flashKnown}  ❌${flashUnknown}`, 'info');
+  showToast(`📚 Complete! ✅${flashKnown}  ❌${flashUnknown}`, 'ok');
+  if (gameStartTime) {
+    const elapsed = (Date.now() - gameStartTime) / 60000;
+    recordPlayTime(elapsed);
+  }
   setTimeout(() => showScreen('screen-menu'), 1000);
 }
 

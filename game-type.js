@@ -19,6 +19,7 @@ let typeCtx;
 let canvasW = 0;
 let canvasH = 0;
 let isStartGame = false;
+let typeQuestionStartTime = 0;
 
 function startTyping() {
   showScreen('screen-type');
@@ -57,6 +58,10 @@ function startTyping() {
   if (typingLoop) cancelAnimationFrame(typingLoop);
   typingLoop = requestAnimationFrame(typeGameLoop);
   updateTypeHUD();
+}
+
+function getTypeTarget(w) {
+  return settings.typeCompareMode === 'word' ? w.word : w.romaji;
 }
 
 function spawnWord() {
@@ -100,7 +105,7 @@ function getTypeHint(q) {
 
 function getTypeModeLabel() {
   const map = { slow: 'Slow', medium: 'Medium', fast: 'Fast' };
-  return map[settings.typeGameSpeed] || 'Medium';
+  return `${map[settings.typeGameSpeed] || 'Medium'} (${settings.typeCompareMode === 'word' ? 'JP' : 'Romaji'})`;
 }
 
 function typeGameLoop() {
@@ -136,6 +141,8 @@ function typeGameLoop() {
         typeHP = Math.max(0, typeHP - 15);
         typeCombo = 0;
         typeWrong++;
+        const originalIndex = w.originalIndex;
+        if (typeof originalIndex === 'number') updateQuestionStats(originalIndex, 'type', false);
         updateTypeHUD();
         shakeScreen();
       }
@@ -214,25 +221,48 @@ function onTypeInput(e) {
   const target = fallingWords[0];
   if (!target) return;
   
-  if (wanakana.toHiragana(val.trim().toLowerCase()) === wanakana.toHiragana(target.romaji.trim().toLowerCase())) {
-    typeCombo++;
-    typeCorrect++;
-    const pts = 10 * Math.max(1, typeCombo);
-    typeScore += pts;
-    playerEXP += pts;
-    target.done = true;
-    const originalIndex = target.originalIndex;
-    if (typeof originalIndex === 'number') updateQuestionStats(originalIndex, 'type', true);
-    inp.value = '';
-    inp.className = 'match-ok';
-    setTimeout(() => inp.className = '', 300);
-    showComboPopup(`+${pts} ⭐${typeCombo > 1 ? ` x${typeCombo}` : ''}`, target.x, target.y);
-    if (typeCombo > 1) showToast(`🔥 COMBO x${typeCombo}!`, 'ok');
-    updateTypeHUD();
-  } else if (wanakana.toHiragana(target.romaji.trim().toLowerCase()).startsWith(wanakana.toHiragana(val.trim().toLowerCase()))) {
-    inp.className = '';
+  if (settings.typeCompareMode === 'romaji') {
+    if (wanakana.toHiragana(val.trim().toLowerCase()) === wanakana.toHiragana(target.romaji.trim().toLowerCase())) {
+      typeCombo++;
+      typeCorrect++;
+      const pts = Math.floor(BASE_XP_REWARD * Math.max(1, typeCombo) * 1.5);
+      typeScore += pts;
+      playerEXP += pts;
+      target.done = true;
+      const originalIndex = target.originalIndex;
+      if (typeof originalIndex === 'number') updateQuestionStats(originalIndex, 'type', true);
+      inp.value = '';
+      inp.className = 'match-ok';
+      setTimeout(() => inp.className = '', 300);
+      showComboPopup(`+${pts} ⭐${typeCombo > 1 ? ` x${typeCombo}` : ''}`, target.x, target.y);
+      if (typeCombo > 1) showToast(`🔥 COMBO x${typeCombo}!`, 'ok');
+      updateTypeHUD();
+    } else if (wanakana.toHiragana(target.romaji.trim().toLowerCase()).startsWith(wanakana.toHiragana(val.trim().toLowerCase()))) {
+      inp.className = '';
+    } else {
+      inp.className = 'match-err';
+    }
   } else {
-    inp.className = 'match-err';
+    if (val === getTypeTarget(target).trim().toLowerCase()) {
+      typeCombo++;
+      typeCorrect++;
+      const pts = Math.floor(BASE_XP_REWARD * Math.max(1, typeCombo) * 1.5);
+      typeScore += pts;
+      playerEXP += pts;
+      target.done = true;
+      const originalIndex = target.originalIndex;
+      if (typeof originalIndex === 'number') updateQuestionStats(originalIndex, 'type', true);
+      inp.value = '';
+      inp.className = 'match-ok';
+      setTimeout(() => inp.className = '', 300);
+      showComboPopup(`+${pts} ⭐${typeCombo > 1 ? ` x${typeCombo}` : ''}`, target.x, target.y);
+      if (typeCombo > 1) showToast(`🔥 COMBO x${typeCombo}!`, 'ok');
+      updateTypeHUD();
+    } else if (getTypeTarget(target).trim().toLowerCase().startsWith(val.trim().toLowerCase())) {
+      inp.className = '';
+    } else {
+      inp.className = 'match-err';
+    }
   }
 }
 
@@ -248,8 +278,12 @@ function updateTypeHUD() {
 function gameOverTyping(score, combo) {
   cancelAnimationFrame(typingLoop);
   typingLoop = null;
-  gameOver(score, combo, 'type', typeCorrect, typeWrong);
+  gameOver(score, combo, 'type', typeCorrect, typeWrong, true);
   saveToStorage();
+  if (gameStartTime) {
+    const elapsed = (Date.now() - gameStartTime) / 60000;
+    recordPlayTime(elapsed);
+  }
 }
 
 function shakeScreen() {

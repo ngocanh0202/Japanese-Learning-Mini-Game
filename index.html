@@ -42,6 +42,10 @@
           <span class="stat-label">🔰 LVL</span>
           <span class="stat-val" id="menu-level">1</span>
         </div>
+        <div class="stat-row level-row">
+          <span class="stat-label">🔥 Streak</span>
+          <span class="stat-val" id="menu-streak">0</span>
+        </div>
       </div>
 
       <div class="menu-btn-container scrollbar-hide">
@@ -69,6 +73,11 @@
           <button class="menu-btn btn-flash" onclick="startGame('flash')">
             <span class="btn-icon">🃏</span>
             <span class="btn-text">FLASHCARD<br><small>Flip Cards</small></span>
+            <span class="btn-arrow">▶</span>
+          </button>
+          <button class="menu-btn btn-write" onclick="startGame('write')">
+            <span class="btn-icon">✍️</span>
+            <span class="btn-text">WRITING PRACTICE<br><small>Type Japanese</small></span>
             <span class="btn-arrow">▶</span>
           </button>
           <button class="menu-btn btn-stats" onclick="showScreen('screen-stats')">
@@ -224,7 +233,11 @@
       <div class="settings-group">
         <div class="setting-block">
           <h3>Game 1 + 5 - QUIZ / LISTEN</h3>
-          <label class="setting-row"><input type="checkbox" id="quiz-timer-enabled" onchange="updateSettingsFromUI()"/> Enable per-question timer</label>
+          <label class="setting-row setting-toggle">
+            <span>Enable per-question timer</span>
+            <input type="checkbox" id="quiz-timer-enabled" class="toggle-input" onchange="updateSettingsFromUI()"/>
+            <span class="toggle-slider"></span>
+          </label>
           <label class="setting-row"><span>Time per question</span>
             <select id="quiz-time-limit" class="setting-select" onchange="updateSettingsFromUI()">
               <option value="10">10 seconds</option>
@@ -234,6 +247,11 @@
               <option value="45">45 seconds</option>
               <option value="60">60 seconds</option>
             </select>
+          </label>
+          <label class="setting-row setting-toggle">
+            <span>Shuffle answer options</span>
+            <input type="checkbox" id="shuffle-answers-enabled" class="toggle-input" onchange="updateSettingsFromUI()"/>
+            <span class="toggle-slider"></span>
           </label>
         </div>
         <div class="setting-block">
@@ -252,7 +270,20 @@
               <option value="fast">Fast</option>
             </select>
           </label>
-          <label class="setting-row"><input type="checkbox" id="type-hints-enabled" onchange="updateSettingsFromUI()"/> Show hiragana / translation hints</label>
+          <label class="setting-row setting-toggle">
+            <span>Show hiragana / translation hints</span>
+            <input type="checkbox" id="type-hints-enabled" class="toggle-input" onchange="updateSettingsFromUI()"/>
+            <span class="toggle-slider"></span>
+          </label>
+          <label class="setting-row"><span>Compare input against</span>
+            <select id="type-compare-mode" class="setting-select" onchange="updateSettingsFromUI()">
+              <option value="romaji">Romaji (recommended)</option>
+              <option value="word">Japanese word (requires IME)</option>
+            </select>
+          </label>
+          <div class="setting-warning" id="type-compare-warning" style="display:none; color: #ffd60a; font-size: 9px; margin-top: 4px;">
+            ⚠️ Requires Japanese IME input. Most browsers cannot type Japanese directly.
+          </div>
         </div>
         <div class="setting-block">
           <h3>Game 4 - MATCH</h3>
@@ -265,12 +296,33 @@
               <option value="90">90 seconds</option>
             </select>
           </label>
+          <label class="setting-row"><span>Number of pairs</span>
+            <select id="match-pair-count" class="setting-select" onchange="updateSettingsFromUI()">
+              <option value="4">4 pairs (easy)</option>
+              <option value="6">6 pairs (normal)</option>
+              <option value="8">8 pairs (hard)</option>
+              <option value="10">10 pairs (expert)</option>
+              <option value="12">12 pairs (master)</option>
+            </select>
+          </label>
         </div>
         <div class="setting-block">
           <h3>Display</h3>
-          <label class="setting-row"><input type="checkbox" id="scanlines-enabled" onchange="updateSettingsFromUI()"/> Show scanlines overlay</label>
-          <label class="setting-row"><input type="checkbox" id="disable-gameover-enabled" onchange="updateSettingsFromUI()"/> Disable HP / game over</label>
-          <label class="setting-row"><input type="checkbox" id="animation-enabled" onchange="updateSettingsFromUI()"/> Enable animations</label>
+          <label class="setting-row setting-toggle">
+            <span>Show scanlines overlay</span>
+            <input type="checkbox" id="scanlines-enabled" class="toggle-input" onchange="updateSettingsFromUI()"/>
+            <span class="toggle-slider"></span>
+          </label>
+          <label class="setting-row setting-toggle">
+            <span>Disable HP / game over</span>
+            <input type="checkbox" id="disable-gameover-enabled" class="toggle-input" onchange="updateSettingsFromUI()"/>
+            <span class="toggle-slider"></span>
+          </label>
+          <label class="setting-row setting-toggle">
+            <span>Enable animations</span>
+            <input type="checkbox" id="animation-enabled" class="toggle-input" onchange="updateSettingsFromUI()"/>
+            <span class="toggle-slider"></span>
+          </label>
         </div>
         <div class="setting-block setting-block-priority">
           <h3>🔀 Smart Prioritization</h3>
@@ -305,6 +357,14 @@
                 </div>
                 <input type="range" id="priority-learning" min="0" max="10" value="2" class="weight-slider" oninput="updateSettingsFromUI()"/>
                 <span class="weight-desc">Correct streaks reduce question priority</span>
+              </div>
+              <div class="priority-weight-item">
+                <div class="weight-header">
+                  <span class="weight-label">Slow Response</span>
+                  <span class="weight-value" id="priority-slow-val">3</span>
+                </div>
+                <input type="range" id="priority-slow" min="0" max="10" value="3" class="weight-slider" oninput="updateSettingsFromUI()"/>
+                <span class="weight-desc">Slow correct answers increase priority</span>
               </div>
             </div>
           </div>
@@ -377,6 +437,7 @@
       <div id="listen-audio-status" class="status-msg" style="margin-top: 12px;"></div>
       <div class="choices-grid" id="listen-choices" style="margin-top: 16px;"></div>
       <div class="explanation-box hidden" id="listen-explanation" style="margin-top: 16px;"></div>
+      <button class="action-btn btn-green btn-sm hidden" id="listen-practice-writing" onclick="showWritePracticeModal(this.dataset.word, this.dataset.romaji, this.dataset.translation)" style="margin-top: 8px;">✍️ Practice</button>
       <button class="next-btn hidden" id="listen-next" onclick="nextListen()">Next ▶</button>
     </div>
     <div class="gameover-overlay hidden" id="listen-gameover">
@@ -411,6 +472,7 @@
       </div>
       <div class="choices-grid" id="quiz-choices"></div>
       <div class="explanation-box hidden" id="quiz-explanation"></div>
+      <button class="action-btn btn-green btn-sm hidden" id="quiz-practice-writing" onclick="showWritePracticeModal(this.dataset.word, this.dataset.romaji, this.dataset.translation)">✍️ Practice</button>
       <button class="next-btn hidden" id="quiz-next" onclick="nextQuiz()">Next ▶</button>
     </div>
   </div>
@@ -500,6 +562,107 @@
 
   </div>
 
+  <!-- GAME 6: WRITING PRACTICE (Canvas) -->
+  <div id="screen-write" class="screen">
+    <div class="game-hud">
+      <button class="hud-back" onclick="exitGame()">◀</button>
+      <div class="hud-title">✍️ WRITING</div>
+      <button class="hud-settings" onclick="openGamePrioritySettings('write')">⚙️</button>
+      <div class="hud-stats">
+        <span>❤ <span id="write-hp">100</span></span>
+        <span>⭐ <span id="write-score">0</span></span>
+        <span>🔥 x<span id="write-combo">0</span></span>
+        <span id="write-progress">0 / 0</span>
+      </div>
+    </div>
+    <div class="hp-bar-wrap"><div class="hp-bar-inner" id="write-hpbar"></div></div>
+
+    <div class="write-layout">
+      <div class="write-left">
+        <div class="write-target-char" id="write-target-char">あ</div>
+        <div class="write-hints">
+          <div class="write-hint-row">
+            <span class="write-hint-label">Meaning</span>
+            <span class="write-hint-value" id="write-hint-translation">---</span>
+          </div>
+          <div class="write-hint-row">
+            <span class="write-hint-label">Read</span>
+            <span class="write-hint-value" id="write-hint-romaji">---</span>
+          </div>
+        </div>
+        <div class="write-feedback hidden" id="write-feedback"></div>
+        <button class="next-btn hidden" id="write-next" onclick="nextWrite()">Next ▶</button>
+      </div>
+      
+      <div class="write-right">
+        <div class="write-canvas-area">
+          <canvas id="writeCanvas" width="280" height="280" data-candidate-list="write-candidates"></canvas>
+          <div class="write-canvas-controls">
+            <button class="canvas-btn" onclick="KanjiCanvas.erase('writeCanvas')">🗑️</button>
+            <button class="canvas-btn" onclick="KanjiCanvas.deleteLast('writeCanvas')">↩️</button>
+            <button class="canvas-btn primary" onclick="checkWriteAnswer()">✅ Check</button>
+          </div>
+        </div>
+
+        <div class="write-fallback hidden" id="write-fallback">
+          <p class="fallback-msg">Not recognized? Type instead:</p>
+          <div class="write-input-wrap">
+            <input type="text" id="write-input" placeholder="Type..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+            <button class="action-btn" onclick="checkWriteFallbackAnswer()">✓</button>
+          </div>
+        </div>
+
+        <div class="write-candidates hidden" id="write-candidates"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRACTICE WRITING MODAL (Canvas) -->
+  <div id="write-practice-modal" class="modal-overlay hidden" onclick="if (event.target === this) closeWritePracticeModal()">
+    <div class="modal-box practice-modal-box">
+      <h3 class="modal-title">✍️ PRACTICE</h3>
+      
+      <div class="practice-layout">
+        <div class="practice-left">
+          <div class="write-target-char" id="practice-target-char">あ</div>
+          <div class="write-hints">
+            <div class="write-hint-row">
+              <span class="write-hint-label">Meaning</span>
+              <span class="write-hint-value" id="practice-hint-translation">---</span>
+            </div>
+            <div class="write-hint-row">
+              <span class="write-hint-label">Read</span>
+              <span class="write-hint-value" id="practice-hint-romaji">---</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="practice-right">
+          <canvas id="practiceCanvas" width="240" height="240" data-candidate-list="practice-candidates"></canvas>
+          <div class="write-canvas-controls">
+            <button class="canvas-btn" onclick="KanjiCanvas.erase('practiceCanvas')">🗑️</button>
+            <button class="canvas-btn" onclick="KanjiCanvas.deleteLast('practiceCanvas')">↩️</button>
+            <button class="canvas-btn primary" onclick="checkWritePracticeAnswer()">✅</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="write-fallback hidden" id="practice-fallback">
+        <p class="fallback-msg">Not recognized? Type:</p>
+        <div class="write-input-wrap">
+          <input type="text" id="practice-write-input" placeholder="Type..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+          <button class="action-btn" onclick="checkWritePracticeAnswer()">✓</button>
+        </div>
+      </div>
+
+      <div class="practice-candidates hidden" id="practice-candidates"></div>
+      <div class="write-feedback hidden" id="practice-feedback"></div>
+      <div class="modal-buttons" style="margin-top: 12px;">
+        <button class="action-btn btn-secondary" onclick="closeWritePracticeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
       <!-- GAME OVER -->
   <div class="gameover-overlay hidden" id="modal-gameover">
     <div class="gameover-box">
@@ -519,12 +682,21 @@
   <script src="firebase-config.js"></script>
   <script src="data.js"></script>
   <script src="./lib/wanakana.min.js"></script>
+  <script src="./lib/kanji-canvas.min.js"></script>
+  <script src="./lib/ref-patterns.js"></script>
+  <!-- Core modules (load order matters) -->
   <script src="main.js"></script>
+  <script src="game-utils.js"></script>
+  <script src="storage.js"></script>
+  <script src="settings.js"></script>
+  <script src="data-manager.js"></script>
+  <!-- Game modules -->
   <script src="game-listen.js"></script>
   <script src="game-quiz.js"></script>
   <script src="game-flash.js"></script>
   <script src="game-match.js"></script>
   <script src="game-type.js"></script>
+  <script src="game-write.js"></script>
 
   <!-- GAME PRIORITY SETTINGS MODAL -->
   <div id="game-priority-modal" class="modal hidden">
@@ -555,13 +727,20 @@
             </div>
             <input type="range" id="game-priority-time" min="0" max="10" value="3" class="weight-slider" oninput="updateGamePriorityValues()"/>
           </div>
-          <div class="priority-weight-item">
-            <div class="weight-header">
-              <span class="weight-label">Learning</span>
-              <span class="weight-value" id="game-priority-learning-val">2</span>
+            <div class="priority-weight-item">
+              <div class="weight-header">
+                <span class="weight-label">Learning</span>
+                <span class="weight-value" id="game-priority-learning-val">2</span>
+              </div>
+              <input type="range" id="game-priority-learning" min="0" max="10" value="2" class="weight-slider" oninput="updateGamePriorityValues()"/>
             </div>
-            <input type="range" id="game-priority-learning" min="0" max="10" value="2" class="weight-slider" oninput="updateGamePriorityValues()"/>
-          </div>
+            <div class="priority-weight-item">
+              <div class="weight-header">
+                <span class="weight-label">Slow Response</span>
+                <span class="weight-value" id="game-priority-slow-val">3</span>
+              </div>
+              <input type="range" id="game-priority-slow" min="0" max="10" value="3" class="weight-slider" oninput="updateGamePriorityValues()"/>
+            </div>
         </div>
       </div>
       <div class="modal-footer">

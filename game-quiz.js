@@ -30,6 +30,8 @@ function startQuiz() {
   renderQuiz();
 }
 
+let quizQuestionStartTime = 0;
+
 function renderQuiz() {
   updateQuizHUD();
   if (settings.quizTimerEnabled) {
@@ -42,41 +44,48 @@ function renderQuiz() {
     return;
   }
   const q = quizDeck[quizIdx];
+  quizQuestionStartTime = Date.now();
 
   document.getElementById('quiz-question').textContent = q.q;
   document.getElementById('quiz-progress').textContent = `${quizIdx + 1} / ${quizDeck.length}`;
   document.getElementById('quiz-explanation').classList.add('hidden');
   document.getElementById('quiz-next').classList.add('hidden');
+  
+  const practiceBtn = document.getElementById('quiz-practice-writing');
+  if (practiceBtn) practiceBtn.classList.add('hidden');
 
   const grid = document.getElementById('quiz-choices');
   grid.innerHTML = '';
-  q.a.forEach((ans, i) => {
+  
+  const { options, correctIndex } = shuffleAnswerOptions(q);
+  options.forEach((ans, i) => {
     const btn = document.createElement('button');
     btn.className = 'choice-btn';
     btn.textContent = ans;
-    btn.onclick = () => answerQuiz(i, btn, q);
+    btn.onclick = () => answerQuiz(i, btn, q, correctIndex);
     grid.appendChild(btn);
   });
 }
 
-function answerQuiz(chosen, btn, q) {
+function answerQuiz(chosen, btn, q, correctIndex) {
   stopQuizTimer();
+  const responseTime = Date.now() - quizQuestionStartTime;
   const quizChoices = document.getElementById('quiz-choices');
   const allBtns = quizChoices ? quizChoices.querySelectorAll('.choice-btn') : document.querySelectorAll('.choice-btn');
   allBtns.forEach(b => b.disabled = true);
-  const correct = chosen === q.c;
+  const correct = chosen === correctIndex;
 
-  if (allBtns[q.c]) {
-    allBtns[q.c].classList.add('correct');
+  if (allBtns[correctIndex]) {
+    allBtns[correctIndex].classList.add('correct');
   }
 
   if (correct) {
     quizCombo++;
     quizCorrect++;
-    const pts = 10 * Math.max(1, quizCombo);
+    const pts = Math.floor(BASE_XP_REWARD * Math.max(1, quizCombo) * 1.5);
     quizScore += pts;
     playerEXP += pts;
-    updateQuestionStats(quizIdx, 'quiz', true);
+    updateQuestionStats(quizIdx, 'quiz', true, responseTime);
     showToast(`✅ Correct! +${pts} EXP 🔥 x${quizCombo}`, 'ok');
     showComboPopup(`+${pts} ⭐`, btn.getBoundingClientRect().left, btn.getBoundingClientRect().top);
   } else {
@@ -86,10 +95,18 @@ function answerQuiz(chosen, btn, q) {
     if (!settings.disableGameOver) {
       quizHP = Math.max(0, quizHP - 20);
     }
-    updateQuestionStats(quizIdx, 'quiz', false);
+    updateQuestionStats(quizIdx, 'quiz', false, responseTime);
     showToast('❌ Wrong!', 'err');
     document.getElementById('screen-quiz').classList.add('shake');
     setTimeout(() => document.getElementById('screen-quiz').classList.remove('shake'), 400);
+    
+    const practiceBtn = document.getElementById('quiz-practice-writing');
+    if (practiceBtn) {
+      practiceBtn.dataset.word = q.word;
+      practiceBtn.dataset.romaji = q.romaji;
+      practiceBtn.dataset.translation = q.translation;
+      practiceBtn.classList.remove('hidden');
+    }
   }
 
   if (q.ex) {
@@ -102,8 +119,7 @@ function answerQuiz(chosen, btn, q) {
 
   if (!settings.disableGameOver && quizHP <= 0) {
     showToast('💀 Out of health! Game over.', 'err')
-    gameOver(quizScore, quizCombo, 'quiz', quizCorrect, quizWrong);
-    //setTimeout(() => { showToast('💀 Out of health! Game over.', 'err'); quizComplete(); }, 1000);
+    gameOver(quizScore, quizCombo, 'quiz', quizCorrect, quizWrong, false);
   }
 }
 
@@ -118,9 +134,13 @@ function quizComplete() {
     playerHP = Math.max(0, playerHP - (100 - quizHP));
   }
   playerCombo = Math.max(playerCombo, quizCombo);
-  gameOver(quizScore, quizCombo, 'quiz', quizCorrect, quizWrong);
+  gameOver(quizScore, quizCombo, 'quiz', quizCorrect, quizWrong, true);
   saveToStorage();
-  showToast(`🎉 Complete! Score: ${quizScore}`, 'info');
+  showToast(`🎉 Complete! Score: ${quizScore}`, 'ok');
+  if (gameStartTime) {
+    const elapsed = (Date.now() - gameStartTime) / 60000;
+    recordPlayTime(elapsed);
+  }
   setTimeout(() => showScreen('screen-menu'), 800);
 }
 
