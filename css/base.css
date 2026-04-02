@@ -24,6 +24,7 @@
   align-items: center; 
   justify-content: flex-start; 
   opacity: 1;
+  min-height: 0;
 }
 
 body.animations-disabled .screen { transition: none; opacity: 1; }

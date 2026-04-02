@@ -2,7 +2,7 @@
    Listen Game Styles
    ================================================ */
 
-.listen-container { width: 100%; max-width: 680px; display: flex; flex-direction: column; gap: 8px; }
+.listen-container { width: 100%; max-width: 680px; display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; }
 
 .listen-card {
   background: var(--panel);

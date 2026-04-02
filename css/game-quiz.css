@@ -4,7 +4,11 @@
 
 /* Quiz Container */
 #screen-quiz { align-items: center; }
-.quiz-container { width: 100%; max-width: 680px; display: flex; flex-direction: column; gap: 14px; }
+.quiz-container { 
+  width: 100%; max-width: 680px; 
+  display: flex; flex-direction: column; gap: 14px; 
+  flex: 1; min-height: 0;
+}
 
 .question-card {
   background: var(--panel);
