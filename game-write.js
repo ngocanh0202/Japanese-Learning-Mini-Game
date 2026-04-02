@@ -77,8 +77,6 @@ function renderWrite() {
   
   const feedback = document.getElementById('write-feedback');
   if (feedback) feedback.classList.add('hidden');
-  const candidates = document.getElementById('write-candidates');
-  if (candidates) candidates.classList.add('hidden');
   const canvasControls = document.getElementById('write-canvas-controls');
   if (canvasControls) canvasControls.classList.remove('hidden');
   const postCheckControls = document.getElementById('write-post-check-controls');
@@ -88,7 +86,6 @@ function renderWrite() {
 function checkWriteAnswer() {
   const current = writeKanjiQueue[writeCurrentKanjiIdx];
   const canvas = document.getElementById('writeCanvas');
-  const candidates = document.getElementById('write-candidates');
   
   const hasStrokes = KanjiCanvas['recordedPattern_writeCanvas'] && 
                       KanjiCanvas['recordedPattern_writeCanvas'].length > 0;
@@ -98,18 +95,13 @@ function checkWriteAnswer() {
     return;
   }
   
-  // Use fineClassification directly instead of recognize (which returns undefined when candidateList is set)
   const i = KanjiCanvas.momentNormalize('writeCanvas');
   const e = KanjiCanvas.extractFeatures(i, 20);
   const s = KanjiCanvas.coarseClassification(e);
   const result = KanjiCanvas.fineClassification(e, s);
   
-  const candidatesText = result || '';
   const targetChar = current.kanji.trim();
-  candidates.textContent = candidatesText;
-  candidates.classList.remove('hidden');
-  
-  const matchIndex = candidatesText.split('').findIndex(c => c === targetChar);
+  const matchIndex = result.split('').findIndex(c => c === targetChar);
   const matchPercent = matchIndex >= 0 ? Math.max(10, 100 - (matchIndex * 10)) : 0;
   
   const responseTime = Date.now() - writeQuestionStartTime;
@@ -163,8 +155,6 @@ function retryWrite() {
   if (canvasControls) canvasControls.classList.remove('hidden');
   const postCheckControls = document.getElementById('write-post-check-controls');
   if (postCheckControls) postCheckControls.classList.add('hidden');
-  const candidates = document.getElementById('write-candidates');
-  if (candidates) candidates.classList.add('hidden');
   
   KanjiCanvas.erase('writeCanvas');
 }

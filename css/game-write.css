@@ -195,37 +195,6 @@
   border-color: var(--accent4);
 }
 
-.write-candidates {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-  width: 100%;
-}
-
-.candidate-item {
-  padding: 6px 12px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  font-family: var(--font-jp);
-  font-size: 14px;
-  color: var(--text);
-  cursor: pointer;
-  transition: all .15s;
-}
-
-.candidate-item:hover {
-  border-color: var(--accent4);
-  background: rgba(10, 132, 255, 0.1);
-}
-
-.candidate-item.correct {
-  border-color: var(--accent3);
-  background: rgba(48, 209, 88, 0.15);
-  color: var(--accent3);
-}
-
 /* Practice Modal */
 .practice-modal-box {
   max-width: 640px;
