@@ -190,8 +190,45 @@ function saveGamePrioritySettings() {
       slowResponse: parseInt(document.getElementById('game-priority-slow').value, 10)
     };
   } else {
-    settings.priority.perGame[currentGameType] = { enabled: null, incorrect: 5, timeSinceSeen: 3, learning: 2, slowResponse: 3 };
+    settings.priority.perGame[currentGameType] = { enabled: null, incorrect: 8, timeSinceSeen: 3, learning: 2, slowResponse: 3 };
   }
   
   saveSettingsToStorage();
+}
+
+function resetSettingsToDefault() {
+  settings = {
+    quizTimerEnabled: false,
+    quizTimeLimit: 20,
+    scanlinesEnabled: false,
+    typeHintsEnabled: true,
+    typeGameSpeed: 'medium',
+    typeSpawnInterval: 'medium',
+    typeCompareMode: 'romaji',
+    matchTimeLimit: 30,
+    matchPairCount: 6,
+    shuffleAnswers: true,
+    disableGameOver: false,
+    animationEnabled: true,
+    questionLimitEnabled: false,
+    questionLimit: 20,
+    priority: {
+      enabled: true,
+      global: { incorrect: 8, timeSinceSeen: 3, learning: 2, slowResponse: 3 },
+      perGame: {
+        quiz: { enabled: null, incorrect: 8, timeSinceSeen: 3, learning: 2, slowResponse: 3 },
+        listen: { enabled: null, incorrect: 8, timeSinceSeen: 3, learning: 2, slowResponse: 3 },
+        flash: { enabled: null, incorrect: 8, timeSinceSeen: 3, learning: 2, slowResponse: 3 },
+        match: { enabled: null, incorrect: 8, timeSinceSeen: 3, learning: 2, slowResponse: 3 },
+        type: { enabled: null, incorrect: 8, timeSinceSeen: 3, learning: 2, slowResponse: 3 },
+        write: { enabled: null, incorrect: 8, timeSinceSeen: 3, learning: 2, slowResponse: 3 }
+      }
+    }
+  };
+  
+  saveSettingsToStorage();
+  renderSettingsScreen();
+  applyScanlinesVisibility();
+  updateAnimationBodyClass();
+  showToast('⚙️ Settings reset to default', 'ok');
 }

@@ -18,14 +18,13 @@
 .tile-card {
   background: var(--panel);
   border: 2px solid var(--border);
-  border-radius: 16px;
-  min-height: 100px;
-  padding: 16px;
+  border-radius: clamp(6px, 0.8vw, 10px);
   display: flex; align-items: center; justify-content: center;
   text-align: center;
   cursor: pointer;
   transition: transform .15s ease, border-color .2s ease, background .2s ease;
-  font-family: var(--font-jp); font-size: 14px; color: var(--text);
+  font-family: var(--font-jp);   font-size: clamp(12px, 1.2vw, 18px); color: var(--text);
+  aspect-ratio: 1 / 0.8;
 }
 .tile-card:hover { transform: translateY(-2px); }
 .tile-card.revealed, .tile-card.matched { background: rgba(48, 86, 179, .12); border-color: var(--accent4); }

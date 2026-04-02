@@ -22,7 +22,7 @@ let settings = {
   typeSpawnInterval: 'medium',
   typeHintsEnabled: true,
   matchTimeLimit: 60,
-  scanlinesEnabled: true,
+  scanlinesEnabled: false,
   disableGameOver: false,
   animationEnabled: true,
   questionLimitEnabled: false,
@@ -31,15 +31,15 @@ let settings = {
   typeCompareMode: 'romaji',
   matchPairCount: 6,
   priority: {
-    enabled: false,
-    global: { incorrect: 5, timeSinceSeen: 3, learning: 2, slowResponse: 3 },
+    enabled: true,
+    global: { incorrect: 8, timeSinceSeen: 3, learning: 2, slowResponse: 3 },
     perGame: {
-      quiz: { enabled: null, incorrect: 5, timeSinceSeen: 3, learning: 2, slowResponse: 3 },
-      listen: { enabled: null, incorrect: 5, timeSinceSeen: 3, learning: 2, slowResponse: 3 },
-      flash: { enabled: null, incorrect: 5, timeSinceSeen: 3, learning: 2, slowResponse: 3 },
-      match: { enabled: null, incorrect: 5, timeSinceSeen: 3, learning: 2, slowResponse: 3 },
-      type: { enabled: null, incorrect: 5, timeSinceSeen: 3, learning: 2, slowResponse: 3 },
-      write: { enabled: null, incorrect: 5, timeSinceSeen: 3, learning: 2, slowResponse: 3 }
+      quiz: { enabled: null, incorrect: 8, timeSinceSeen: 3, learning: 2, slowResponse: 3 },
+      listen: { enabled: null, incorrect: 8, timeSinceSeen: 3, learning: 2, slowResponse: 3 },
+      flash: { enabled: null, incorrect: 8, timeSinceSeen: 3, learning: 2, slowResponse: 3 },
+      match: { enabled: null, incorrect: 8, timeSinceSeen: 3, learning: 2, slowResponse: 3 },
+      type: { enabled: null, incorrect: 8, timeSinceSeen: 3, learning: 2, slowResponse: 3 },
+      write: { enabled: null, incorrect: 8, timeSinceSeen: 3, learning: 2, slowResponse: 3 }
     }
   }
 };
