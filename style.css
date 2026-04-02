@@ -787,6 +787,7 @@ textarea:focus { outline: none; border-color: var(--accent4); }
 .listen-container {
   width: 100%; max-width: 680px;
   display: flex; flex-direction: column; gap: 8px;
+  flex: 1;
 }
 
 /* ─── QUIZ GAME ─────────────────────────────────── */
@@ -794,6 +795,7 @@ textarea:focus { outline: none; border-color: var(--accent4); }
 .quiz-container {
   width: 100%; max-width: 680px;
   display: flex; flex-direction: column; gap: 14px;
+  flex: 1;
 }
 
 .question-card {
@@ -819,6 +821,7 @@ textarea:focus { outline: none; border-color: var(--accent4); }
   display: grid; grid-template-columns: 1fr 1fr;
   gap: 10px;
   width: 100%;
+  flex: 1;
 }
 .choice-btn {
   padding: 14px 16px;
@@ -1117,7 +1120,8 @@ textarea:focus { outline: none; border-color: var(--accent4); }
 @media (max-width: 480px) {
   .screen { padding: 12px; }
   .menu-container { padding-top: 18px; }
-  .choices-grid { grid-template-columns: 1fr; }
+  .choices-grid { grid-template-columns: 1fr; min-height: 200px; }
+  .choice-btn { width: 100%; padding: 16px 18px; text-align: center !important; }
   .card-scene { min-height: 200px; }
   .type-container { gap: 12px; }
   .type-input-wrap { flex-direction: column; align-items: stretch; }

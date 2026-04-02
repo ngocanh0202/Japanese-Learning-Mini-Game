@@ -442,8 +442,8 @@
     <div class="hp-bar-wrap"><div class="hp-bar-inner" id="listen-hpbar"></div></div>
     <div class="listen-container">
       <div class="question-card" id="listen-instruction" style="position: relative;">
-        <div id="listen-audio-status" class="status-msg" style="font-size: 12px;"></div>
         <button class="action-btn btn-green btn-sm hidden" id="listen-practice-writing" onclick="showWritePracticeModal(this.dataset.word, this.dataset.romaji, this.dataset.translation)" style="position: absolute; bottom: 8px; right: 8px;">✍️ Practice</button>
+        <div id="listen-audio-status" class="status-msg" style="font-size: 12px;"></div>
       </div>
       <div class="btn-row" style="justify-content: center; margin: 12px 0 0;">
         <button class="action-btn btn-secondary" onclick="replayListenAudio()">🔊 Play again</button>
@@ -611,18 +611,15 @@
       <div class="write-right">
         <div class="write-canvas-area">
           <canvas id="writeCanvas" width="280" height="280" data-candidate-list="write-candidates"></canvas>
-          <div class="write-canvas-controls">
+          <div class="write-canvas-controls" id="write-canvas-controls">
             <button class="canvas-btn" onclick="KanjiCanvas.erase('writeCanvas')">🗑️</button>
             <button class="canvas-btn" onclick="KanjiCanvas.deleteLast('writeCanvas')">↩️</button>
-            <button class="canvas-btn primary" onclick="checkWriteAnswer()">✅ Check</button>
+            <button class="canvas-btn primary" id="write-check-btn" onclick="checkWriteAnswer()">✅ Check</button>
+            <button class="canvas-btn skip-btn" onclick="skipWrite()">⏭️ Skip</button>
           </div>
-        </div>
-
-        <div class="write-fallback hidden" id="write-fallback">
-          <p class="fallback-msg">Not recognized? Type instead:</p>
-          <div class="write-input-wrap">
-            <input type="text" id="write-input" placeholder="Type..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
-            <button class="action-btn" onclick="checkWriteFallbackAnswer()">✓</button>
+          <div class="write-post-check-controls hidden" id="write-post-check-controls">
+            <button class="canvas-btn" onclick="retryWrite()">↩️ Try Again</button>
+            <button class="canvas-btn primary" onclick="nextWrite()">Next ▶</button>
           </div>
         </div>
 

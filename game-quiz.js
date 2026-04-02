@@ -46,19 +46,18 @@ function renderQuiz() {
   const q = quizDeck[quizIdx];
   quizQuestionStartTime = Date.now();
 
-  document.getElementById('quiz-question').textContent = q.q;
+  const questionEl = document.getElementById('quiz-question');
+  const practiceBtn = document.getElementById('quiz-practice-writing');
+  questionEl.innerHTML = q.q;
+  if (practiceBtn) {
+    questionEl.appendChild(practiceBtn);
+    practiceBtn.classList.add('hidden');
+    practiceBtn.classList.remove('practice-highlight');
+  }
   document.getElementById('quiz-progress').textContent = `${quizIdx + 1} / ${quizDeck.length}`;
   document.getElementById('quiz-explanation').classList.add('hidden');
   document.getElementById('quiz-next').classList.add('hidden');
   
-  const practiceBtn = document.getElementById('quiz-practice-writing');
-  if (practiceBtn) {
-    practiceBtn.dataset.word = q.word;
-    practiceBtn.dataset.romaji = q.romaji;
-    practiceBtn.dataset.translation = q.translation;
-    practiceBtn.classList.remove('hidden');
-  }
-
   const grid = document.getElementById('quiz-choices');
   grid.innerHTML = '';
   
@@ -111,6 +110,7 @@ function answerQuiz(chosen, btn, q, correctIndex) {
       practiceBtn.dataset.romaji = q.romaji;
       practiceBtn.dataset.translation = q.translation;
       practiceBtn.classList.remove('hidden');
+      practiceBtn.classList.add('practice-highlight');
     }
   }
 

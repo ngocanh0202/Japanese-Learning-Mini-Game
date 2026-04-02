@@ -135,6 +135,29 @@
   filter: brightness(1.2);
 }
 
+.canvas-btn.skip-btn {
+  background: var(--bg3);
+  color: var(--text-muted);
+  border-color: var(--border);
+}
+
+.canvas-btn.skip-btn:hover {
+  background: var(--panel);
+  color: var(--text);
+  border-color: var(--accent4);
+}
+
+.write-post-check-controls {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  justify-content: center;
+}
+
+.write-post-check-controls.hidden {
+  display: none;
+}
+
 .write-fallback {
   width: 100%;
   padding: 12px;
@@ -205,7 +228,7 @@
 
 /* Practice Modal */
 .practice-modal-box {
-  max-width: 420px;
+  max-width: 640px;
   max-height: 90vh;
   overflow-y: auto;
 }

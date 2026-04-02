@@ -48,10 +48,8 @@ function renderListen() {
   
   const practiceBtn = document.getElementById('listen-practice-writing');
   if (practiceBtn) {
-    practiceBtn.dataset.word = q.word;
-    practiceBtn.dataset.romaji = q.romaji;
-    practiceBtn.dataset.translation = q.translation;
-    practiceBtn.classList.remove('hidden');
+    practiceBtn.classList.add('hidden');
+    practiceBtn.classList.remove('practice-highlight');
   }
   
   updateListenHUD();
@@ -147,6 +145,7 @@ function answerListen(choice, btn, q, correctIndex) {
       practiceBtn.dataset.romaji = q.romaji;
       practiceBtn.dataset.translation = q.translation;
       practiceBtn.classList.remove('hidden');
+      practiceBtn.classList.add('practice-highlight');
     }
   }
 

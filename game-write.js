@@ -14,6 +14,13 @@ let writeUseFallback = false;
 
 const BASE_XP_WRITE = 8;
 
+let writeKanjiQueue = [];
+let writeCurrentKanjiIdx = 0;
+
+function getKanjiChars(word) {
+  return word.split('').filter(c => /[\u4e00-\u9faf]/.test(c));
+}
+
 function startWrite() {
   showScreen('screen-write');
   writeHP = 100;
@@ -21,11 +28,28 @@ function startWrite() {
   writeCombo = 0;
   writeCorrect = 0;
   writeWrong = 0;
-  writeDeck = getPrioritizedDeck(questions, 'write');
+  const rawDeck = getPrioritizedDeck(questions, 'write');
   if (settings.questionLimitEnabled) {
-    writeDeck = writeDeck.slice(0, settings.questionLimit);
+    writeDeck = rawDeck.slice(0, settings.questionLimit);
+  } else {
+    writeDeck = rawDeck;
   }
+  
+  writeKanjiQueue = [];
+  writeDeck.forEach(q => {
+    const kanjis = getKanjiChars(q.word);
+    kanjis.forEach(k => {
+      writeKanjiQueue.push({
+        kanji: k,
+        word: q.word,
+        romaji: q.romaji,
+        translation: q.translation
+      });
+    });
+  });
+  
   writeIdx = 0;
+  writeCurrentKanjiIdx = 0;
   writeUseFallback = false;
   document.getElementById('modal-gameover').classList.add('hidden');
   
@@ -36,41 +60,33 @@ function startWrite() {
 function renderWrite() {
   updateWriteHUD();
   
-  if (writeIdx >= writeDeck.length) {
+  if (writeKanjiQueue.length === 0) {
     writeComplete();
     return;
   }
   
-  const q = writeDeck[writeIdx];
+  const current = writeKanjiQueue[writeCurrentKanjiIdx];
   writeQuestionStartTime = Date.now();
   
-  document.getElementById('write-progress').textContent = `${writeIdx + 1} / ${writeDeck.length}`;
-  document.getElementById('write-target-char').textContent = q.word || '?';
-  document.getElementById('write-hint-translation').textContent = q.translation || '---';
-  document.getElementById('write-hint-romaji').textContent = q.romaji || '---';
+  document.getElementById('write-progress').textContent = `${writeCurrentKanjiIdx + 1} / ${writeKanjiQueue.length}`;
+  document.getElementById('write-target-char').textContent = current.kanji || '?';
+  document.getElementById('write-hint-translation').textContent = current.translation || '---';
+  document.getElementById('write-hint-romaji').textContent = current.romaji || '---';
   
   KanjiCanvas.erase('writeCanvas');
   
-  document.getElementById('write-feedback').classList.add('hidden');
-  document.getElementById('write-next').classList.add('hidden');
-  document.getElementById('write-fallback').classList.add('hidden');
-  document.getElementById('write-candidates').classList.add('hidden');
-  writeUseFallback = false;
-  
-  const inp = document.getElementById('write-input');
-  inp.value = '';
-  inp.disabled = false;
+  const feedback = document.getElementById('write-feedback');
+  if (feedback) feedback.classList.add('hidden');
+  const candidates = document.getElementById('write-candidates');
+  if (candidates) candidates.classList.add('hidden');
+  const canvasControls = document.getElementById('write-canvas-controls');
+  if (canvasControls) canvasControls.classList.remove('hidden');
+  const postCheckControls = document.getElementById('write-post-check-controls');
+  if (postCheckControls) postCheckControls.classList.add('hidden');
 }
 
 function checkWriteAnswer() {
-  if (writeIdx >= writeDeck.length) return;
-  
-  if (writeUseFallback) {
-    checkWriteFallbackAnswer();
-    return;
-  }
-  
-  const q = writeDeck[writeIdx];
+  const current = writeKanjiQueue[writeCurrentKanjiIdx];
   const canvas = document.getElementById('writeCanvas');
   const candidates = document.getElementById('write-candidates');
   
@@ -82,38 +98,34 @@ function checkWriteAnswer() {
     return;
   }
   
-  const result = KanjiCanvas.recognize('writeCanvas');
+  // Use fineClassification directly instead of recognize (which returns undefined when candidateList is set)
+  const i = KanjiCanvas.momentNormalize('writeCanvas');
+  const e = KanjiCanvas.extractFeatures(i, 20);
+  const s = KanjiCanvas.coarseClassification(e);
+  const result = KanjiCanvas.fineClassification(e, s);
+  
   const candidatesText = result || '';
+  const targetChar = current.kanji.trim();
   candidates.textContent = candidatesText;
   candidates.classList.remove('hidden');
   
-  if (!candidatesText || candidatesText.trim() === '') {
-    showWriteFallback();
-    return;
-  }
-  
-  const topCandidates = candidatesText.split('').slice(0, 3);
-  const targetChar = q.word.trim();
-  
-  const matchIndex = topCandidates.findIndex(c => c === targetChar);
-  const isCorrect = matchIndex !== -1;
+  const matchIndex = candidatesText.split('').findIndex(c => c === targetChar);
+  const matchPercent = matchIndex >= 0 ? Math.max(10, 100 - (matchIndex * 10)) : 0;
   
   const responseTime = Date.now() - writeQuestionStartTime;
-  const feedback = document.getElementById('write-feedback');
-  feedback.classList.remove('hidden');
   
-  if (isCorrect) {
+  if (matchPercent >= 10) {
     writeCombo++;
     writeCorrect++;
-    const pts = Math.floor(BASE_XP_WRITE * Math.max(1, writeCombo) * 1.5);
+    const pts = Math.floor(BASE_XP_WRITE * Math.max(1, writeCombo) * 1.5 * (matchPercent / 100));
     writeScore += pts;
     playerEXP += pts;
     updateQuestionStats(writeIdx, 'write', true, responseTime);
     
-    let msg = `<span style="color: #30d158">✅ Correct! +${pts} EXP</span>`;
-    if (matchIndex > 0) msg += ` <span style="color: #ffd60a">(#${matchIndex + 1} match)</span>`;
-    if (writeCombo > 1) msg += ` <span style="color: #ffd60a">🔥 x${writeCombo}</span>`;
-    feedback.innerHTML = msg;
+    let msg = `✓ ${matchPercent}% Match! +${pts} EXP`;
+    if (matchIndex > 0) msg += ` (#${matchIndex + 1})`;
+    if (writeCombo > 1) msg += ` 🔥 x${writeCombo}`;
+    showToast(msg, 'ok');
   } else {
     writeCombo = 0;
     writeWrong++;
@@ -122,15 +134,19 @@ function checkWriteAnswer() {
     }
     updateQuestionStats(writeIdx, 'write', false, responseTime);
     
-    feedback.innerHTML = `<span style="color: #ff2d55">❌ Not quite!</span><br>
-      <span style="color: #30d158">Draw: ${escapeHtml(targetChar)}</span>
-      <br><button class="canvas-btn" onclick="showWriteFallback()">Try typing instead</button>`;
+    showToast('✗ Not recognized', 'err');
     
-    document.getElementById('screen-write').classList.add('shake');
-    setTimeout(() => document.getElementById('screen-write').classList.remove('shake'), 400);
+    const screenWrite = document.getElementById('screen-write');
+    if (screenWrite) {
+      screenWrite.classList.add('shake');
+      setTimeout(() => screenWrite.classList.remove('shake'), 400);
+    }
   }
   
-  document.getElementById('write-next').classList.remove('hidden');
+  const canvasControls = document.getElementById('write-canvas-controls');
+  if (canvasControls) canvasControls.classList.add('hidden');
+  const postCheckControls = document.getElementById('write-post-check-controls');
+  if (postCheckControls) postCheckControls.classList.remove('hidden');
   updateWriteHUD();
   
   if (!settings.disableGameOver && writeHP <= 0) {
@@ -139,79 +155,33 @@ function checkWriteAnswer() {
   }
 }
 
-function showWriteFallback() {
-  writeUseFallback = true;
-  document.getElementById('write-fallback').classList.remove('hidden');
-  document.getElementById('write-candidates').classList.add('hidden');
-  document.getElementById('write-feedback').classList.add('hidden');
-  document.getElementById('write-next').classList.add('hidden');
+function retryWrite() {
+  const feedback = document.getElementById('write-feedback');
+  if (feedback) feedback.classList.add('hidden');
   
-  const inp = document.getElementById('write-input');
-  inp.value = '';
-  inp.focus();
-}
-
-function showWriteCanvas() {
-  writeUseFallback = false;
-  document.getElementById('write-fallback').classList.add('hidden');
+  const canvasControls = document.getElementById('write-canvas-controls');
+  if (canvasControls) canvasControls.classList.remove('hidden');
+  const postCheckControls = document.getElementById('write-post-check-controls');
+  if (postCheckControls) postCheckControls.classList.add('hidden');
+  const candidates = document.getElementById('write-candidates');
+  if (candidates) candidates.classList.add('hidden');
+  
   KanjiCanvas.erase('writeCanvas');
 }
 
-function checkWriteFallbackAnswer() {
-  if (writeIdx >= writeDeck.length) return;
-  
-  const q = writeDeck[writeIdx];
-  const inp = document.getElementById('write-input');
-  const val = inp.value.trim();
-  
-  if (!val) return;
-  
-  const responseTime = Date.now() - writeQuestionStartTime;
-  let isCorrect = false;
-  
-  if (settings.typeCompareMode === 'romaji') {
-    isCorrect = wanakana.toHiragana(val.toLowerCase()) === wanakana.toHiragana(q.romaji.trim().toLowerCase());
-  } else {
-    isCorrect = val === q.word.trim();
-  }
-  
-  const feedback = document.getElementById('write-feedback');
-  feedback.classList.remove('hidden');
-  
-  if (isCorrect) {
-    writeCombo++;
-    writeCorrect++;
-    const pts = Math.floor(BASE_XP_WRITE * Math.max(1, writeCombo) * 1.5);
-    writeScore += pts;
-    playerEXP += pts;
-    updateQuestionStats(writeIdx, 'write', true, responseTime);
-    feedback.innerHTML = `<span style="color: #30d158">✅ Correct! +${pts} EXP</span>`;
-    if (writeCombo > 1) feedback.innerHTML += ` <span style="color: #ffd60a">🔥 x${writeCombo}</span>`;
-  } else {
-    writeCombo = 0;
-    writeWrong++;
-    if (!settings.disableGameOver) {
-      writeHP = Math.max(0, writeHP - 20);
-    }
-    updateQuestionStats(writeIdx, 'write', false, responseTime);
-    feedback.innerHTML = `<span style="color: #ff2d55">❌ Wrong!</span><br><span style="color: #30d158">Answer: ${escapeHtml(q.word)}</span>`;
-    document.getElementById('screen-write').classList.add('shake');
-    setTimeout(() => document.getElementById('screen-write').classList.remove('shake'), 400);
-  }
-  
-  inp.disabled = true;
-  document.getElementById('write-next').classList.remove('hidden');
-  updateWriteHUD();
-  
-  if (!settings.disableGameOver && writeHP <= 0) {
-    showToast('💀 Out of health!', 'err');
-    gameOver(writeScore, writeCombo, 'write', writeCorrect, writeWrong, false);
-  }
-}
-
 function nextWrite() {
-  writeIdx++;
-  renderWrite();
+  writeCurrentKanjiIdx++;
+  if (writeCurrentKanjiIdx < writeKanjiQueue.length) {
+    renderWrite();
+  } else {
+    writeIdx++;
+    renderWrite();
+  }
+  
+  const canvasControls = document.getElementById('write-canvas-controls');
+  if (canvasControls) canvasControls.classList.remove('hidden');
+  const postCheckControls = document.getElementById('write-post-check-controls');
+  if (postCheckControls) postCheckControls.classList.add('hidden');
 }
 
 function writeComplete() {
@@ -230,6 +200,43 @@ function updateWriteHUD() {
   document.getElementById('write-score').textContent = writeScore;
   document.getElementById('write-combo').textContent = writeCombo;
   document.getElementById('write-hpbar').style.width = `${Math.max(0, writeHP)}%`;
+}
+
+function skipWrite() {
+  if (writeKanjiQueue.length === 0) return;
+  
+  writeCombo = 0;
+  writeWrong++;
+  if (!settings.disableGameOver) {
+    writeHP = Math.max(0, writeHP - 20);
+  }
+  
+  updateQuestionStats(writeIdx, 'write', false, 0);
+  
+  const current = writeKanjiQueue[writeCurrentKanjiIdx];
+  showToast(`⏭️ Skipped: ${current.kanji}`, 'err');
+  
+  const screenWrite = document.getElementById('screen-write');
+  if (screenWrite) {
+    screenWrite.classList.add('shake');
+    setTimeout(() => screenWrite.classList.remove('shake'), 400);
+  }
+  
+  writeCurrentKanjiIdx++;
+  if (writeCurrentKanjiIdx >= writeKanjiQueue.length) {
+    writeIdx++;
+  }
+  
+  if (!settings.disableGameOver && writeHP <= 0) {
+    showToast('💀 Out of health!', 'err');
+    gameOver(writeScore, writeCombo, 'write', writeCorrect, writeWrong, false);
+  } else {
+    const canvasControls = document.getElementById('write-canvas-controls');
+    if (canvasControls) canvasControls.classList.remove('hidden');
+    const postCheckControls = document.getElementById('write-post-check-controls');
+    if (postCheckControls) postCheckControls.classList.add('hidden');
+    renderWrite();
+  }
 }
 
 // ================================================
@@ -286,33 +293,27 @@ function checkWritePracticeAnswer() {
     return;
   }
   
-  const result = KanjiCanvas.recognize('practiceCanvas');
+  // Use fineClassification directly for practice canvas
+  const i = KanjiCanvas.momentNormalize('practiceCanvas');
+  const e = KanjiCanvas.extractFeatures(i, 20);
+  const s = KanjiCanvas.coarseClassification(e);
+  const result = KanjiCanvas.fineClassification(e, s);
+  
   const candidatesText = result || '';
   candidates.textContent = candidatesText;
   candidates.classList.remove('hidden');
   
-  if (!candidatesText || candidatesText.trim() === '') {
-    showPracticeFallback();
-    return;
-  }
-  
-  const topCandidates = candidatesText.split('').slice(0, 3);
   const targetChar = q.word.trim();
+  const matchIndex = candidatesText.split('').findIndex(c => c === targetChar);
+  const matchPercent = matchIndex >= 0 ? Math.max(10, 100 - (matchIndex * 10)) : 0;
   
-  const matchIndex = topCandidates.findIndex(c => c === targetChar);
-  const isCorrect = matchIndex !== -1;
-  
-  const feedback = document.getElementById('practice-feedback');
-  feedback.classList.remove('hidden');
-  
-  if (isCorrect) {
-    let msg = `<span style="color: #30d158">✅ Great job!</span>`;
-    if (matchIndex > 0) msg += ` (Match #${matchIndex + 1})`;
-    feedback.innerHTML = msg;
+  if (matchPercent >= 10) {
+    let msg = `✓ ${matchPercent}% Match!`;
+    if (matchIndex > 0) msg += ` (#${matchIndex + 1})`;
+    showToast(msg, 'ok');
     setTimeout(() => closeWritePracticeModal(), 1500);
   } else {
-    feedback.innerHTML = `<span style="color: #ff2d55">❌ Not quite!</span>
-      <br><button class="canvas-btn" onclick="showPracticeFallback()">Try typing</button>`;
+    showToast('✗ Not recognized', 'err');
   }
 }
 
