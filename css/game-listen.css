@@ -4,6 +4,9 @@
 
 .listen-container { width: 100%; max-width: 680px; display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; }
 
+#listen-instruction { min-height: auto; padding: 16px; }
+#listen-instruction #listen-audio-status { font-size: 14px; color: var(--accent2); font-family: var(--font-px); }
+
 .listen-card {
   background: var(--panel);
   border: 2px solid var(--accent7);
