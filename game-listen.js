@@ -47,7 +47,12 @@ function renderListen() {
   document.getElementById('listen-next').classList.add('hidden');
   
   const practiceBtn = document.getElementById('listen-practice-writing');
-  if (practiceBtn) practiceBtn.classList.add('hidden');
+  if (practiceBtn) {
+    practiceBtn.dataset.word = q.word;
+    practiceBtn.dataset.romaji = q.romaji;
+    practiceBtn.dataset.translation = q.translation;
+    practiceBtn.classList.remove('hidden');
+  }
   
   updateListenHUD();
   if (settings.quizTimerEnabled) {
