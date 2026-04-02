@@ -206,6 +206,8 @@
 /* Practice Modal */
 .practice-modal-box {
   max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .practice-layout {
