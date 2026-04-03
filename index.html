@@ -591,11 +591,21 @@
 
     <div class="write-layout">
       <div class="write-left">
-        <div class="write-target-char" id="write-target-char">あ</div>
+        <div class="write-target-wrapper">
+          <div class="write-target-char" id="write-target-char">あ</div>
+          <div class="write-hint-container">
+            <button type="button" class="hint-btn" onclick="toggleWriteHint()">? Hint</button>
+            <div class="hint-popup hidden" id="write-hint-popup">
+              <div class="hint-row"><span class="hint-label">Word:</span> <span class="hint-value" id="write-hint-word">---</span></div>
+              <div class="hint-row"><span class="hint-label">Ex:</span> <span class="hint-value" id="write-hint-ex">---</span></div>
+            </div>
+          </div>
+        </div>
         <div class="write-hints">
           <div class="write-hint-row">
             <span class="write-hint-label">Meaning</span>
             <span class="write-hint-value" id="write-hint-translation">---</span>
+            <button type="button" class="translate-btn" onclick="translateWriteMeaningToVietnamese()">🌐 VI</button>
           </div>
           <div class="write-hint-row">
             <span class="write-hint-label">Read</span>
@@ -636,6 +646,7 @@
             <div class="write-hint-row">
               <span class="write-hint-label">Meaning</span>
               <span class="write-hint-value" id="practice-hint-translation">---</span>
+              <button type="button" class="translate-btn" onclick="translateToVietnamese()">🌐 VI</button>
             </div>
             <div class="write-hint-row">
               <span class="write-hint-label">Read</span>
