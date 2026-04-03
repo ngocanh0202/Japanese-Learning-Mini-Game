@@ -2,39 +2,75 @@
    Flashcard Game Styles
    ================================================ */
 
-.flash-container { width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 20px; }
+#screen-flash { align-items: center; }
+.flash-container {
+  flex: 1;
+  width: 100%;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 20px;
+}
 .card-scene {
-  width: 100%; height: min(300px, 40vh);
-  perspective: 1000px;
+  flex: 1;
+  width: 100%;
+  min-height: 200px; max-height: 450px;
+  perspective: 900px;
   cursor: pointer;
 }
 .card-inner {
   width: 100%; height: 100%;
-  position: relative;
-  transition: transform 0.6s;
   transform-style: preserve-3d;
+  transition: transform .6s cubic-bezier(.4,2,.6,1);
+  position: relative;
 }
-.card-scene.flipped .card-inner { transform: rotateY(180deg); }
+.card-inner.flipped { transform: rotateY(180deg); }
 .card-face {
   position: absolute; inset: 0;
   backface-visibility: hidden;
+  border-radius: 10px;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  border-radius: 16px;
-  border: 2px solid var(--accent5);
-  box-shadow: 0 0 20px rgba(191, 90, 242, 0.3);
+  gap: 12px;
 }
-.card-front { background: var(--panel); }
-.card-back { background: var(--bg2); transform: rotateY(180deg); }
-.card-hint { font-family: var(--font-px); font-size: 8px; color: var(--text-dim); margin-bottom: 12px; }
-.card-word { font-family: var(--font-jp); font-size: 48px; font-weight: 700; color: var(--text); }
+.card-front {
+  background: linear-gradient(135deg, #1a1a30, #0e0e20);
+  border: 2px solid var(--accent5);
+  box-shadow: var(--glow-b), 0 8px 32px rgba(0,0,0,.6);
+}
+.card-back {
+  background: linear-gradient(135deg, #1a300a, #0e200e);
+  border: 2px solid var(--accent3);
+  box-shadow: var(--glow-g), 0 8px 32px rgba(0,0,0,.6);
+  transform: rotateY(180deg);
+}
+.card-hint { font-family: var(--font-px); font-size: 6px; color: var(--text-dim); letter-spacing: 2px; }
+.card-word { font-size: clamp(48px, 12vw, 80px); font-family: var(--font-jp); font-weight: 700; }
+.card-reading { font-size: 32px; font-family: var(--font-jp); font-weight: 700; color: var(--accent3); }
+.card-explanation { font-size: 13px; color: var(--text-dim); text-align: center; padding: 0 20px; }
 .card-translation { font-family: var(--font-jp); font-size: 18px; color: var(--accent5); margin-top: 12px; }
-.flash-controls { display: flex; gap: 12px; justify-content: center; }
-.flash-btn {
-  padding: 12px 24px;
+.flash-controls, .flash-actions { display: flex; gap: 12px; justify-content: center; }
+.flash-btn, .btn-known, .btn-unknown {
+  flex: 1; padding: 14px;
   font-family: var(--font-px); font-size: 8px;
   border: none; border-radius: var(--radius); cursor: pointer;
+  transition: all .15s;
 }
-.flash-btn.no { background: var(--accent); color: #fff; }
-.flash-btn.yes { background: var(--accent3); color: #000; }
-.flash-btn:hover { filter: brightness(1.2); }
+.btn-known, .flash-btn.yes { background: var(--accent3); color: #000; box-shadow: var(--glow-g); }
+.btn-unknown, .flash-btn.no { background: var(--accent); color: #fff; box-shadow: var(--glow-r); }
+.flash-btn:hover, .btn-known:hover, .btn-unknown:hover { filter: brightness(1.15); transform: translateY(-2px); }
+
+.flash-progress { width: 100%; }
+.flash-bar-track {
+  height: 8px; background: rgba(255,255,255,.07);
+  border-radius: 4px; overflow: hidden;
+}
+.flash-bar-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--accent5), var(--accent4));
+  transition: width .4s ease;
+  box-shadow: var(--glow-b);
+}
+
+@media (min-width: 769px) {
+  .flash-container { max-width: 550px; }
+  .card-scene { max-height: 380px; }
+}

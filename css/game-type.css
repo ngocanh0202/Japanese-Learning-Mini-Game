@@ -8,14 +8,39 @@
 .type-input-wrap { display: flex; gap: 12px; align-items: center; }
 
 /* Match Game */
-.tile-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+#screen-match { align-items: center; }
+.match-container {
+  flex: 1;
+  width: 60%;
+  max-width: 800px;
+  height: calc(100vh - 180px);
+  display: flex;
+  flex-direction: column;
   gap: 12px;
-  margin-top: 18px;
+  box-sizing: border-box;
+  padding: 16px 16px 0px 16px;
+}
+#match-board {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(4px, 0.6vw, 8px);
+  flex: 1;
+  align-content: stretch;
+  justify-content: center;
+}
+.tile-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(4px, 0.6vw, 8px);
+  flex: 1;
+  align-content: stretch;
+  justify-content: center;
   width: 100%;
 }
 .tile-card {
+  flex: 1 1 calc(25% - clamp(4px, 0.6vw, 8px));
+  min-width: 80px;
+  max-width: 200px;
   background: var(--panel);
   border: 2px solid var(--border);
   border-radius: clamp(6px, 0.8vw, 10px);
@@ -23,8 +48,9 @@
   text-align: center;
   cursor: pointer;
   transition: transform .15s ease, border-color .2s ease, background .2s ease;
-  font-family: var(--font-jp);   font-size: clamp(12px, 1.2vw, 18px); color: var(--text);
+  font-family: var(--font-jp);   font-size: clamp(16px, 2vw, 24px); color: var(--text);
   aspect-ratio: 1 / 0.8;
+  max-height: 100%;
 }
 .tile-card:hover { transform: translateY(-2px); }
 .tile-card.revealed, .tile-card.matched { background: rgba(48, 86, 179, .12); border-color: var(--accent4); }
@@ -34,6 +60,22 @@
 .tile-card.clicked { animation: cardClick 0.3s ease; }
 .tile-card.entering { animation: cardEnter 0.5s ease forwards; opacity: 0; }
 
+.match-footer {
+  margin-top: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 8px 0;
+}
+
+.match-instructions {
+  font-size: 14px;
+  color: var(--accent4);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
 @keyframes cardClick { 0% { transform: scale(1); } 50% { transform: scale(0.95); } 100% { transform: scale(1); } }
 @keyframes matchSuccess { 0% { transform: scale(1); box-shadow: none; } 50% { transform: scale(1.08); box-shadow: 0 0 20px var(--accent3); } 100% { transform: scale(1); box-shadow: 0 0 15px var(--accent3); } }
 @keyframes matchWrong { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
@@ -42,4 +84,41 @@
 .timer-display {
   font-family: var(--font-px); font-size: 9px; color: var(--text-dim);
   text-align: center; margin-top: 12px;
+}
+
+/* Match Game Responsive */
+@media (max-width: 600px) {
+  .match-container {
+    width: 100%;
+    height: calc(100vh - 160px);
+    padding: 10px;
+    gap: 8px;
+  }
+  #match-board {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: center;
+  }
+  .tile-card {
+    flex: 1 1 calc(33% - 4px);
+    min-width: 60px;
+    max-width: none;
+    font-size: 10px;
+  }
+  .match-footer {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .type-input-wrap {
+    flex-direction: column;
+    width: 100%;
+  }
+  .type-target {
+    width: 100%;
+    min-width: unset;
+  }
+  #type-input {
+    width: 100%;
+  }
 }

@@ -6,18 +6,19 @@
   <title>日本語 QUEST — Japanese Learning Mini-Games</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="css/variables.css" />
-  <link rel="stylesheet" href="css/base.css" />
-  <link rel="stylesheet" href="css/menu.css" />
-  <link rel="stylesheet" href="css/game-quiz.css" />
-  <link rel="stylesheet" href="css/game-listen.css" />
-  <link rel="stylesheet" href="css/game-flash.css" />
-  <link rel="stylesheet" href="css/game-type.css" />
-  <link rel="stylesheet" href="css/game-write.css" />
-  <link rel="stylesheet" href="css/game-hud.css" />
-  <link rel="stylesheet" href="css/game-overlays.css" />
-  <link rel="stylesheet" href="css/modals.css" />
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/menu.css">
+  <link rel="stylesheet" href="css/game-quiz.css">
+  <link rel="stylesheet" href="css/game-listen.css">
+  <link rel="stylesheet" href="css/game-flash.css">
+  <link rel="stylesheet" href="css/game-type.css">
+  <link rel="stylesheet" href="css/game-write.css">
+  <link rel="stylesheet" href="css/game-hud.css">
+  <link rel="stylesheet" href="css/game-overlays.css">
+  <link rel="stylesheet" href="css/modals.css">
+  <link rel="stylesheet" href="css/extra.css">
   <link rel="icon" href="images/icon.jpg" type="image/jpeg">
 </head>
 <body>
@@ -582,6 +583,7 @@
         <span>❤ <span id="write-hp">100</span></span>
         <span>⭐ <span id="write-score">0</span></span>
         <span>🔥 x<span id="write-combo">0</span></span>
+        <span>📝 <span id="write-words">0</span></span>
         <span id="write-progress">0 / 0</span>
       </div>
     </div>
@@ -652,6 +654,12 @@
         </div>
       </div>
 
+      <div class="practice-pagination hidden" id="practice-pagination">
+        <button class="page-btn" onclick="prevPracticeKanji()">◀</button>
+        <span id="practice-page-info">1 / 2</span>
+        <button class="page-btn" onclick="nextPracticeKanji()">▶</button>
+      </div>
+
       <div class="write-fallback hidden" id="practice-fallback">
         <p class="fallback-msg">Not recognized? Type:</p>
         <div class="write-input-wrap">
@@ -684,24 +692,25 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-  <script src="firebase-config.js"></script>
-  <script src="data.js"></script>
-  <script src="./lib/wanakana.min.js"></script>
-  <script src="./lib/kanji-canvas.min.js"></script>
-  <script src="./lib/ref-patterns.js"></script>
-  <!-- Core modules (load order matters) -->
-  <script src="main.js"></script>
-  <script src="game-utils.js"></script>
-  <script src="storage.js"></script>
-  <script src="settings.js"></script>
-  <script src="data-manager.js"></script>
+  <!-- 3rd party libs -->
+  <script src="lib/wanakana.min.js"></script>
+  <script src="lib/kanji-canvas.min.js"></script>
+  <script src="lib/ref-patterns.js"></script>
+  <!-- Core modules -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/game-utils.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/data-manager.js"></script>
   <!-- Game modules -->
-  <script src="game-listen.js"></script>
-  <script src="game-quiz.js"></script>
-  <script src="game-flash.js"></script>
-  <script src="game-match.js"></script>
-  <script src="game-type.js"></script>
-  <script src="game-write.js"></script>
+  <script src="js/games/game-listen.js"></script>
+  <script src="js/games/game-quiz.js"></script>
+  <script src="js/games/game-flash.js"></script>
+  <script src="js/games/game-match.js"></script>
+  <script src="js/games/game-type.js"></script>
+  <script src="js/games/game-write.js"></script>
 
   <!-- GAME PRIORITY SETTINGS MODAL -->
   <div id="game-priority-modal" class="modal hidden">

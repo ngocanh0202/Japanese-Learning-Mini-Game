@@ -1,0 +1,88 @@
+/* ================================================
+   Animations - Recovered from old style.css
+   ================================================ */
+
+/* ─── Toast Animation ───────────────────────────── */
+@keyframes toastSlideIn {
+  0% { opacity: 0; transform: translateY(-20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Priority Panel ─────────────────────────────── */
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Card Click ─────────────────────────────────── */
+@keyframes cardClick {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+/* ─── Match Success ──────────────────────────────── */
+@keyframes matchSuccess {
+  0% { transform: scale(1); box-shadow: none; }
+  50% { transform: scale(1.08); box-shadow: 0 0 20px var(--accent3); }
+  100% { transform: scale(1); box-shadow: 0 0 15px var(--accent3); }
+}
+
+/* ─── Match Wrong ────────────────────────────────── */
+@keyframes matchWrong {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-8px); }
+  80% { transform: translateX(8px); }
+}
+
+/* ─── Card Enter ─────────────────────────────────── */
+@keyframes cardEnter {
+  0% { opacity: 0; transform: scale(0.8) translateY(-20px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ─── Generic Animations ─────────────────────────── */
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ─── Combo Popup ─────────────────────────────────── */
+@keyframes comboFloat {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-60px); }
+}
+
+/* ─── Shake ──────────────────────────────────────── */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+/* ─── Twinkle ────────────────────────────────────── */
+@keyframes twinkle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+/* ─── Utility Classes ────────────────────────────── */
+.shake { animation: shake 0.4s ease; }
+.tile-card.match-success { animation: matchSuccess 0.6s ease forwards; }
