@@ -33,6 +33,39 @@ function getKanjiChars(word) {
   return word.split('').filter(c => /[\u4e00-\u9faf]/.test(c));
 }
 
+// Patch KanjiCanvas to fill white background after erase (cross-browser consistency)
+function patchKanjiCanvasWhiteBackground() {
+  const originalErase = KanjiCanvas.erase;
+  KanjiCanvas.erase = function(id) {
+    originalErase(id);
+    const ctx = KanjiCanvas['ctx_' + id];
+    const w = KanjiCanvas['w_' + id];
+    const h = KanjiCanvas['h_' + id];
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, w, h);
+  };
+
+  const originalDeleteLast = KanjiCanvas.deleteLast;
+  KanjiCanvas.deleteLast = function(id) {
+    originalDeleteLast(id);
+    const ctx = KanjiCanvas['ctx_' + id];
+    const w = KanjiCanvas['w_' + id];
+    const h = KanjiCanvas['h_' + id];
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, w, h);
+  };
+
+  const originalRedraw = KanjiCanvas.redraw;
+  KanjiCanvas.redraw = function(id) {
+    const ctx = KanjiCanvas['ctx_' + id];
+    const w = KanjiCanvas['w_' + id];
+    const h = KanjiCanvas['h_' + id];
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, w, h);
+    originalRedraw(id);
+  };
+}
+
 function startWrite() {
   showScreen('screen-write');
   writeHP = 100;
@@ -75,6 +108,7 @@ function startWrite() {
   
   setupCanvasSize('writeCanvas');
   KanjiCanvas.init('writeCanvas');
+  patchKanjiCanvasWhiteBackground();
   renderWrite();
 }
 
@@ -366,6 +400,7 @@ async function showWritePracticeModal(word, romaji, translation) {
   // Initialize canvas FIRST to prevent erase error
   setupCanvasSize('practiceCanvas');
   KanjiCanvas.init('practiceCanvas');
+  patchKanjiCanvasWhiteBackground();
   
   if (practiceKanjiList.length > 0) {
     await renderPracticeKanjiPage();
