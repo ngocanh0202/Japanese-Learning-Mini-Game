@@ -11,7 +11,10 @@ let flashUnknown = 0;
 let flashQuestionStartTime = 0;
 
 function startFlash() {
-  flashDeck = getPrioritizedDeck(questions, 'flash');
+  flashDeck = getPrioritizedDeck(questions, 'flash').map(q => ({
+    ...q,
+    originalIndex: questions.indexOf(q)
+  }));
   if (settings.questionLimitEnabled) {
     flashDeck = flashDeck.slice(0, settings.questionLimit);
   }
@@ -47,15 +50,28 @@ function flipCard() {
   document.getElementById('flash-actions').classList.remove('hidden');
 }
 
-function markCard(known) {
+function markCard(level) {
   const responseTime = Date.now() - flashQuestionStartTime;
-  if (known) {
-    flashKnown++;
-    playerEXP += Math.floor(BASE_XP_REWARD * 1.5);
-    updateQuestionStats(flashIdx, 'flash', true, responseTime);
-  } else {
-    flashUnknown++;
-    updateQuestionStats(flashIdx, 'flash', false, responseTime);
+  const q = flashDeck[flashIdx];
+  const origIdx = q.originalIndex;
+
+  switch (level) {
+    case 'new':
+    case 'learning':
+      flashUnknown++;
+      updateQuestionStats(origIdx, 'flash', false, responseTime);
+      break;
+    case 'familiar':
+      flashKnown++;
+      playerEXP += Math.floor(BASE_XP_REWARD * 1.5);
+      updateQuestionStats(origIdx, 'flash', true, responseTime);
+      break;
+    case 'mastered':
+      flashKnown++;
+      playerEXP += Math.floor(BASE_XP_REWARD * 2.5);
+      updateQuestionStats(origIdx, 'flash', true, responseTime);
+      updateQuestionStats(origIdx, 'flash', true, responseTime);
+      break;
   }
   flashIdx++;
   renderCard();

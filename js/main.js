@@ -418,22 +418,24 @@ function renderStatsScreen() {
         return;
       }
       
-      let isMastered = true;
+      let highestLevel = 'new';
       let hasAnyAttempts = false;
+      const levelOrder = { 'new': 0, 'learning': 1, 'familiar': 2, 'mastered': 3 };
       
       for (const gameType of gameTypes) {
         const typeStats = stats[gameType];
         if (typeStats && typeStats.totalAttempts > 0) {
           hasAnyAttempts = true;
-          const typeAccuracy = typeStats.correctCount / typeStats.totalAttempts;
-          if (typeAccuracy < 0.8 || typeStats.incorrect > 3) {
-            isMastered = false;
+          const effectiveIncorrect = getEffectiveIncorrect(typeStats);
+          const level = getConfidenceLevel(typeStats.correctStreak || 0, effectiveIncorrect);
+          if (levelOrder[level] > levelOrder[highestLevel]) {
+            highestLevel = level;
           }
         }
       }
       
       if (hasAnyAttempts) {
-        if (isMastered) {
+        if (highestLevel === 'mastered') {
           mastered++;
         } else {
           learning++;

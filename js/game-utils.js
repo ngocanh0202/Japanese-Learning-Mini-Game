@@ -9,12 +9,43 @@ const BASE_XP_REWARD = 5;
 /* ── PRIORITY SYSTEM ── */
 const MAX_DAYS = 30;
 const MAX_TIME_BONUS = 50;
+const DECAY_RATE = 0.85;
+const MAX_HISTORY_DAYS = 30;
+
+function cleanIncorrectHistory(history) {
+  if (!history || !Array.isArray(history)) return [];
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - MAX_HISTORY_DAYS * 24 * 60 * 60 * 1000);
+  return history.filter(ts => new Date(ts) >= cutoff);
+}
+
+function getEffectiveIncorrect(stats) {
+  if (!stats) return 0;
+  const history = stats.incorrectHistory || [];
+  const cleaned = cleanIncorrectHistory(history);
+  if (cleaned.length === 0) {
+    return stats.incorrect || 0;
+  }
+  const now = new Date();
+  return cleaned.reduce((sum, ts) => {
+    const daysSince = Math.max(0, Math.floor((now - new Date(ts)) / (1000 * 60 * 60 * 24)));
+    return sum + Math.pow(DECAY_RATE, daysSince);
+  }, 0);
+}
+
+function getConfidenceLevel(correctStreak, effectiveIncorrect) {
+  const score = correctStreak / (correctStreak + effectiveIncorrect + 1);
+  if (score >= 0.7) return 'mastered';
+  if (score >= 0.4) return 'familiar';
+  if (score >= 0.1) return 'learning';
+  return 'new';
+}
 
 function getPriorityScore(questionIndex, gameType, weights) {
   const id = `q-${questionIndex}`;
   const stats = questionStats[id]?.[gameType];
   
-  const incorrect = stats?.incorrect || 0;
+  const effectiveIncorrect = getEffectiveIncorrect(stats);
   const correctStreak = stats?.correctStreak || 0;
   const slowCorrectCount = stats?.slowCorrectCount || 0;
   const lastSeen = stats?.lastSeen ? new Date(stats.lastSeen) : null;
@@ -31,7 +62,7 @@ function getPriorityScore(questionIndex, gameType, weights) {
   const learningPenalty = correctStreak * weights.learning;
   const slowBonus = Math.min(slowCorrectCount * (weights.slowResponse || 0), 30);
   
-  return (incorrect * weights.incorrect) + timeBonus - learningPenalty + slowBonus;
+  return (effectiveIncorrect * weights.incorrect) + timeBonus - learningPenalty + slowBonus;
 }
 
 function getWeights(gameType) {
@@ -108,12 +139,15 @@ function updateQuestionStats(questionIndex, gameType, isCorrect, responseTime) {
     questionStats[id] = {};
   }
   if (!questionStats[id][gameType]) {
-    questionStats[id][gameType] = { incorrect: 0, correctCount: 0, totalAttempts: 0, lastSeen: null, correctStreak: 0, avgResponseTime: 0, slowCorrectCount: 0 };
+    questionStats[id][gameType] = { incorrect: 0, correctCount: 0, totalAttempts: 0, lastSeen: null, correctStreak: 0, avgResponseTime: 0, slowCorrectCount: 0, incorrectHistory: [] };
   }
   
   const stats = questionStats[id][gameType];
   stats.lastSeen = new Date().toISOString();
   stats.totalAttempts = (stats.totalAttempts || 0) + 1;
+  
+  if (!stats.incorrectHistory) stats.incorrectHistory = [];
+  stats.incorrectHistory = cleanIncorrectHistory(stats.incorrectHistory);
   
   if (responseTime !== undefined) {
     const oldAvg = stats.avgResponseTime || 0;
@@ -126,9 +160,16 @@ function updateQuestionStats(questionIndex, gameType, isCorrect, responseTime) {
     if (responseTime !== undefined && responseTime >= SLOW_RESPONSE_THRESHOLD) {
       stats.slowCorrectCount = (stats.slowCorrectCount || 0) + 1;
     }
+    if (stats.correctStreak > 0 && stats.correctStreak % 3 === 0 && stats.incorrect > 0) {
+      stats.incorrect = Math.max(0, stats.incorrect - 1);
+      if (stats.incorrectHistory.length > 0) {
+        stats.incorrectHistory.shift();
+      }
+    }
   } else {
     stats.incorrect = (stats.incorrect || 0) + 1;
     stats.correctStreak = 0;
+    stats.incorrectHistory.push(new Date().toISOString());
   }
   
   saveQuestionStats();

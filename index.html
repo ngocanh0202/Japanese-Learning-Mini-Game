@@ -517,8 +517,12 @@
       </div>
 
       <div class="flash-actions hidden" id="flash-actions">
-        <button class="flash-btn btn-unknown" onclick="markCard(false)">❌ Unknown</button>
-        <button class="flash-btn btn-known" onclick="markCard(true)">✅ Known</button>
+        <div class="flash-assessment-grid">
+          <button class="flash-btn btn-new" onclick="markCard('new')">🔴 New</button>
+          <button class="flash-btn btn-learning" onclick="markCard('learning')">🟡 Learning</button>
+          <button class="flash-btn btn-familiar" onclick="markCard('familiar')">🟢 Familiar</button>
+          <button class="flash-btn btn-mastered" onclick="markCard('mastered')">⭐ Mastered</button>
+        </div>
       </div>
 
       <div class="flash-progress">

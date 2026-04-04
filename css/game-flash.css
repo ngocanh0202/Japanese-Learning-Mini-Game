@@ -48,15 +48,24 @@
 .card-explanation { font-size: 13px; color: var(--text-dim); text-align: center; padding: 0 20px; }
 .card-translation { font-family: var(--font-jp); font-size: 18px; color: var(--accent5); margin-top: 12px; }
 .flash-controls, .flash-actions { display: flex; gap: 12px; justify-content: center; }
-.flash-btn, .btn-known, .btn-unknown {
-  flex: 1; padding: 14px;
+.flash-assessment-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  max-width: 500px;
+}
+.flash-btn {
+  padding: 14px;
   font-family: var(--font-px); font-size: 8px;
   border: none; border-radius: var(--radius); cursor: pointer;
   transition: all .15s;
 }
-.btn-known, .flash-btn.yes { background: var(--accent3); color: #000; box-shadow: var(--glow-g); }
-.btn-unknown, .flash-btn.no { background: var(--accent); color: #fff; box-shadow: var(--glow-r); }
-.flash-btn:hover, .btn-known:hover, .btn-unknown:hover { filter: brightness(1.15); transform: translateY(-2px); }
+.btn-new      { background: var(--accent);  color: #fff; box-shadow: var(--glow-r); }
+.btn-learning { background: var(--accent2); color: #000; box-shadow: 0 0 12px rgba(255,214,10,.4); }
+.btn-familiar { background: var(--accent3); color: #000; box-shadow: var(--glow-g); }
+.btn-mastered { background: var(--accent4); color: #fff; box-shadow: var(--glow-b); }
+.flash-btn:hover { filter: brightness(1.15); transform: translateY(-2px); }
 
 .flash-progress { width: 100%; }
 .flash-bar-track {
@@ -86,6 +95,6 @@
   .card-explanation { font-size: 19.5px; }
   .card-translation { font-size: 27px; margin-top: 18px; }
   .flash-controls, .flash-actions { gap: 18px; }
-  .flash-btn, .btn-known, .btn-unknown { padding: 21px; font-size: 12px; }
+  .flash-btn { padding: 21px; font-size: 12px; }
   .flash-bar-track { height: 12px; }
 }

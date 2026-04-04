@@ -4,7 +4,7 @@
 
 ## ✨ Features
 
-### 🕹️ 5 Mini-Games
+### 🕹️ 6 Mini-Games
 
 | Game | Description |
 |------|-------------|
@@ -12,12 +12,16 @@
 | 🎧 **Listening Quiz** | Hear Japanese words via TTS, pick the correct reading |
 | ⌨ **Falling Words** | Type romaji before words hit the ground |
 | 🧩 **Match** | Pair Japanese words with correct readings/translations |
-| 🃏 **Flashcard** | Flip cards, mark Known/Unknown for spaced review |
+| 🃏 **Flashcard** | Flip cards, self-assess with 4 levels: New / Learning / Familiar / Mastered |
+| ✍️ **Writing Practice** | Type Japanese characters from memory |
 
 ### 🧠 Smart Learning System
 
-- **Priority-based question selection** — questions you struggle with appear more often
-- **Adjustable weights**: Incorrect Answer, Time Since Seen, Learning Effect
+- **Exponential time-decay priority** — recent mistakes weigh more, old mistakes fade (0.85^days)
+- **4-level flashcard self-assessment** — New / Learning / Familiar / Mastered with differentiated tracking
+- **Auto incorrect reduction** — every 3 correct answers in a row reduces incorrect count
+- **Confidence scoring** — questions classified as New / Learning / Familiar / Mastered
+- **Adjustable weights**: Incorrect Answer, Time Since Seen, Learning Effect, Slow Response
 - **Per-game settings override** — customize difficulty per game mode
 - **Progress tracking** — HP, EXP, Level, Combo system persisted in localStorage
 

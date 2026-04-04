@@ -123,12 +123,27 @@ function loadQuestionStats() {
   if (stored) {
     try {
       questionStats = JSON.parse(stored);
+      seedIncorrectHistory();
     } catch (e) {
       questionStats = {};
     }
   }
   initQuestionStats(questions);
   saveQuestionStats();
+}
+
+function seedIncorrectHistory() {
+  Object.keys(questionStats).forEach(id => {
+    const qStats = questionStats[id];
+    Object.keys(qStats).forEach(game => {
+      const stats = qStats[game];
+      if (stats.incorrect > 0 && (!stats.incorrectHistory || stats.incorrectHistory.length === 0)) {
+        stats.incorrectHistory = stats.lastSeen ? [stats.lastSeen] : [];
+      } else if (!stats.incorrectHistory) {
+        stats.incorrectHistory = [];
+      }
+    });
+  });
 }
 
 function saveQuestionStats() {
@@ -159,7 +174,7 @@ function initQuestionStats(questionsArr) {
     }
     gameTypes.forEach(game => {
       if (!questionStats[id][game]) {
-        questionStats[id][game] = { incorrect: 0, correctCount: 0, totalAttempts: 0, lastSeen: null, correctStreak: 0, avgResponseTime: 0, slowCorrectCount: 0 };
+        questionStats[id][game] = { incorrect: 0, correctCount: 0, totalAttempts: 0, lastSeen: null, correctStreak: 0, avgResponseTime: 0, slowCorrectCount: 0, incorrectHistory: [] };
       }
     });
   });
