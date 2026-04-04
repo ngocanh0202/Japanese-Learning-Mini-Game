@@ -1253,7 +1253,7 @@
   .data-table { min-width: 1020px; }
   .stats-section { gap: 18px; }
   .stats-section-title { font-size: 15px; margin-bottom: 12px; }
-  .stats-summary-grid { gap: 18px; }
+  .stats-summary-grid { grid-template-columns: repeat(4, 1fr); gap: 18px; }
   .stats-summary-card { padding: 18px; }
   .stats-summary-value { font-size: 21px; }
   .stats-summary-label { font-size: 12px; }
