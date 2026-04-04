@@ -76,7 +76,7 @@ function renderMatchBoard() {
 }
 
 function startMatch() {
-  const prioritizedItems = getPrioritizedDeck(questions, 'match');
+  const prioritizedItems = getPrioritizedDeck(questions, 'quiz');
   let items = prioritizedItems;
   if (settings.questionLimitEnabled) {
     items = items.slice(0, settings.questionLimit);
@@ -118,7 +118,6 @@ function handleMatchCard(cardId) {
       matchFound++;
       matchCorrect++;
       matchSelection = [];
-      updateQuestionStats(first.questionId, 'match', true);
       showToast('✅ Correct match!', 'ok');
       updateMatchHUD();
       setTimeout(() => {
@@ -139,7 +138,6 @@ function handleMatchCard(cardId) {
       }
     } else {
       matchWrong++;
-      updateQuestionStats(first.questionId, 'match', false);
       setTimeout(() => {
         first.revealed = false;
         second.revealed = false;

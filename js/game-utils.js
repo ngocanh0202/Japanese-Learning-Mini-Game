@@ -104,13 +104,13 @@ function getPrioritizedDeck(questionsArr, gameType) {
     score: getPriorityScore(index, gameType, weights)
   }));
   
-  const totalWeight = scored.reduce((sum, item) => sum + Math.max(0, item.score) + 1, 0);
+  let currentTotalWeight = scored.reduce((sum, item) => sum + Math.max(0, item.score) + 1, 0);
   
   const result = [];
   const tempIndices = [...Array(questionsArr.length).keys()];
   
   while (tempIndices.length > 0 && result.length < questionsArr.length) {
-    let rand = Math.random() * totalWeight;
+    let rand = Math.random() * currentTotalWeight;
     let selectedIdx = -1;
     
     for (let i = 0; i < scored.length; i++) {
@@ -136,6 +136,8 @@ function getPrioritizedDeck(questionsArr, gameType) {
     }
     
     result.push(questionsArr[selectedIdx]);
+    const removedItem = scored.find(s => s.index === selectedIdx);
+    currentTotalWeight -= (Math.max(0, removedItem.score) + 1);
     tempIndices.splice(tempIndices.indexOf(selectedIdx), 1);
   }
   

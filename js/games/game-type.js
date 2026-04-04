@@ -30,7 +30,7 @@ function startTyping() {
   typeCorrect = 0;
   typeWrong = 0;
   fallingWords = [];
-  typeDeck = getPrioritizedDeck(questions, 'type').map((q, idx) => ({ ...q, questionId: generateQuestionId(q) }));
+  typeDeck = getPrioritizedDeck(questions, 'quiz').map((q, idx) => ({ ...q, questionId: generateQuestionId(q) }));
   if (settings.questionLimitEnabled) {
     typeDeck = typeDeck.slice(0, settings.questionLimit);
   }
@@ -65,7 +65,7 @@ function getTypeTarget(w) {
 }
 
 function spawnWord() {
-  if (typeDeck.length === 0) typeDeck = getPrioritizedDeck(questions, 'type').map((q, idx) => ({ ...q, questionId: generateQuestionId(q) }));
+  if (typeDeck.length === 0) typeDeck = getPrioritizedDeck(questions, 'quiz').map((q, idx) => ({ ...q, questionId: generateQuestionId(q) }));
   const q = typeDeck.pop();
   const x = Math.random() * (canvasW - 140) + 20;
   fallingWords.push({
@@ -142,8 +142,6 @@ function typeGameLoop() {
         typeHP = Math.max(0, typeHP - 15);
         typeCombo = 0;
         typeWrong++;
-        const questionId = w.questionId;
-        if (typeof questionId === 'string') updateQuestionStats(questionId, 'type', false);
         updateTypeHUD();
         shakeScreen();
         
@@ -239,8 +237,6 @@ function onTypeInput(e) {
     typeScore += pts;
     playerEXP += pts;
     target.done = true;
-    const questionId = target.questionId;
-    if (typeof questionId === 'string') updateQuestionStats(questionId, 'type', true);
     inp.value = '';
     inp.className = 'match-ok';
     setTimeout(() => inp.className = '', 300);

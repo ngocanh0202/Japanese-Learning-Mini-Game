@@ -69,7 +69,6 @@ function markCard(level) {
       flashKnown++;
       playerEXP += Math.floor(BASE_XP_REWARD * 2.5);
       updateQuestionStats(q.questionId, 'flash', true, responseTime);
-      updateQuestionStats(q.questionId, 'flash', true, responseTime);
       break;
   }
   flashIdx++;
