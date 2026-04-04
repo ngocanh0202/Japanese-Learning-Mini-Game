@@ -205,8 +205,9 @@
   border-radius: 8px;
   background: #fff;
   cursor: crosshair;
-  width: min(280px, 70vw);
-  height: min(280px, 70vw);
+  width: 280px;
+  height: 280px;
+  image-rendering: auto;
 }
 
 .write-canvas-controls {
@@ -408,8 +409,8 @@
   
   #writeCanvas,
   #practiceCanvas {
-    width: min(260px, 70vw);
-    height: min(260px, 70vw);
+    width: 260px;
+    height: 260px;
   }
 }
 
@@ -433,7 +434,7 @@
   .write-feedback { padding: 18px 24px; font-size: 21px; }
   .write-canvas-area { gap: 18px; }
   #writeCanvas,
-  #practiceCanvas { width: 480px; height: 480px; }
+  #practiceCanvas { width: 280px; height: 280px; }
   .canvas-btn { padding: 12px 18px; font-size: 12px; }
   .write-post-check-controls { gap: 12px; margin-top: 12px; }
   .write-fallback { padding: 18px; }

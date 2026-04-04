@@ -17,31 +17,16 @@ const BASE_XP_WRITE = 8;
 let writeKanjiQueue = [];
 let writeCurrentKanjiIdx = 0;
 
-function syncCanvasResolution(id) {
-  const canvas = document.getElementById(id);
-  if (!canvas) return false;
-  const rect = canvas.getBoundingClientRect();
-  console.log(`[syncCanvasResolution] ${id}: rect=${rect.width}x${rect.height}, canvas=${canvas.width}x${canvas.height}, css=${canvas.style.width}x${canvas.style.height}`);
-  if (rect.width > 0 && rect.height > 0) {
-    canvas.width = Math.round(rect.width);
-    canvas.height = Math.round(rect.height);
-    console.log(`[syncCanvasResolution] ${id}: synced to ${canvas.width}x${canvas.height}`);
-    return true;
-  }
-  console.log(`[syncCanvasResolution] ${id}: waiting for layout...`);
-  return false;
-}
+const CANVAS_INTERNAL_SIZE = 280;
 
-function initCanvasWithSync(id, callback) {
-  const tryInit = () => {
-    if (syncCanvasResolution(id)) {
-      KanjiCanvas.init(id);
-      if (callback) callback();
-    } else {
-      requestAnimationFrame(tryInit);
-    }
-  };
-  requestAnimationFrame(tryInit);
+function setupCanvasSize(id) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  canvas.width = CANVAS_INTERNAL_SIZE;
+  canvas.height = CANVAS_INTERNAL_SIZE;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, CANVAS_INTERNAL_SIZE, CANVAS_INTERNAL_SIZE);
 }
 
 function getKanjiChars(word) {
@@ -63,9 +48,14 @@ function startWrite() {
   }
   
   writeKanjiQueue = [];
+  let kanjiCount = 0;
+  const maxKanji = settings.questionLimitEnabled ? settings.questionLimit : Infinity;
+  
   writeDeck.forEach(q => {
+    if (kanjiCount >= maxKanji) return;
     const kanjis = getKanjiChars(q.word);
     kanjis.forEach(k => {
+      if (kanjiCount >= maxKanji) return;
       writeKanjiQueue.push({
         kanji: k,
         word: q.word,
@@ -73,6 +63,7 @@ function startWrite() {
         translation: q.translation,
         ex: q.ex || ''
       });
+      kanjiCount++;
     });
   });
   
@@ -81,9 +72,9 @@ function startWrite() {
   writeUseFallback = false;
   document.getElementById('modal-gameover').classList.add('hidden');
   
-  initCanvasWithSync('writeCanvas', () => {
-    renderWrite();
-  });
+  setupCanvasSize('writeCanvas');
+  KanjiCanvas.init('writeCanvas');
+  renderWrite();
 }
 
 function renderWrite() {
@@ -218,6 +209,11 @@ function checkWriteAnswer() {
   if (!settings.disableGameOver && writeHP <= 0) {
     showToast('💀 Out of health!', 'err');
     gameOver(writeScore, writeCombo, 'write', writeCorrect, writeWrong, false);
+    return;
+  }
+  
+  if (writeCurrentKanjiIdx >= writeKanjiQueue.length - 1) {
+    setTimeout(() => writeComplete(), 1500);
   }
 }
 
@@ -238,8 +234,7 @@ function nextWrite() {
   if (writeCurrentKanjiIdx < writeKanjiQueue.length) {
     renderWrite();
   } else {
-    writeIdx++;
-    renderWrite();
+    writeComplete();
   }
   
   const canvasControls = document.getElementById('write-canvas-controls');
@@ -291,7 +286,8 @@ function skipWrite() {
   
   writeCurrentKanjiIdx++;
   if (writeCurrentKanjiIdx >= writeKanjiQueue.length) {
-    writeIdx++;
+    writeComplete();
+    return;
   }
   
   if (!settings.disableGameOver && writeHP <= 0) {
@@ -367,28 +363,29 @@ async function showWritePracticeModal(word, romaji, translation) {
   practiceCurrentIdx = 0;
   
   // Initialize canvas FIRST to prevent erase error
-  initCanvasWithSync('practiceCanvas', () => {
-    if (practiceKanjiList.length > 0) {
-      renderPracticeKanjiPage();
-    } else {
-      showToast('No kanji found in this word', 'err');
-      document.getElementById('practice-target-char').textContent = word || '?';
-      document.getElementById('practice-hint-translation').textContent = translation || '---';
-      document.getElementById('practice-hint-romaji').textContent = romaji || '---';
-      document.getElementById('practice-pagination').classList.add('hidden');
-      KanjiCanvas.erase('practiceCanvas');
-    }
-    
-    document.getElementById('practice-fallback').classList.add('hidden');
-    document.getElementById('practice-candidates').classList.add('hidden');
-    document.getElementById('practice-feedback').classList.add('hidden');
-    
-    const inp = document.getElementById('practice-write-input');
-    inp.value = '';
-    inp.disabled = false;
-    
-    document.getElementById('write-practice-modal').classList.remove('hidden');
-  });
+  setupCanvasSize('practiceCanvas');
+  KanjiCanvas.init('practiceCanvas');
+  
+  if (practiceKanjiList.length > 0) {
+    await renderPracticeKanjiPage();
+  } else {
+    showToast('No kanji found in this word', 'err');
+    document.getElementById('practice-target-char').textContent = word || '?';
+    document.getElementById('practice-hint-translation').textContent = translation || '---';
+    document.getElementById('practice-hint-romaji').textContent = romaji || '---';
+    document.getElementById('practice-pagination').classList.add('hidden');
+    KanjiCanvas.erase('practiceCanvas');
+  }
+  
+  document.getElementById('practice-fallback').classList.add('hidden');
+  document.getElementById('practice-candidates').classList.add('hidden');
+  document.getElementById('practice-feedback').classList.add('hidden');
+  
+  const inp = document.getElementById('practice-write-input');
+  inp.value = '';
+  inp.disabled = false;
+  
+  document.getElementById('write-practice-modal').classList.remove('hidden');
 }
 
 async function renderPracticeKanjiPage() {
