@@ -30,7 +30,7 @@ function startTyping() {
   typeCorrect = 0;
   typeWrong = 0;
   fallingWords = [];
-  typeDeck = getPrioritizedDeck(questions, 'type').map((q, idx) => ({ ...q, originalIndex: questions.indexOf(q) }));
+  typeDeck = getPrioritizedDeck(questions, 'type').map((q, idx) => ({ ...q, questionId: generateQuestionId(q) }));
   if (settings.questionLimitEnabled) {
     typeDeck = typeDeck.slice(0, settings.questionLimit);
   }
@@ -65,7 +65,7 @@ function getTypeTarget(w) {
 }
 
 function spawnWord() {
-  if (typeDeck.length === 0) typeDeck = getPrioritizedDeck(questions, 'type').map((q, idx) => ({ ...q, originalIndex: questions.indexOf(q) }));
+  if (typeDeck.length === 0) typeDeck = getPrioritizedDeck(questions, 'type').map((q, idx) => ({ ...q, questionId: generateQuestionId(q) }));
   const q = typeDeck.pop();
   const x = Math.random() * (canvasW - 140) + 20;
   fallingWords.push({
@@ -73,6 +73,7 @@ function spawnWord() {
     romaji: q.romaji,
     translation: q.translation || '',
     hint: getTypeHint(q),
+    questionId: q.questionId,
     x,
     y: -30,
     speed: gameSpeed + Math.random() * 0.4,
@@ -141,8 +142,8 @@ function typeGameLoop() {
         typeHP = Math.max(0, typeHP - 15);
         typeCombo = 0;
         typeWrong++;
-        const originalIndex = w.originalIndex;
-        if (typeof originalIndex === 'number') updateQuestionStats(originalIndex, 'type', false);
+        const questionId = w.questionId;
+        if (typeof questionId === 'string') updateQuestionStats(questionId, 'type', false);
         updateTypeHUD();
         shakeScreen();
         
@@ -238,8 +239,8 @@ function onTypeInput(e) {
     typeScore += pts;
     playerEXP += pts;
     target.done = true;
-    const originalIndex = target.originalIndex;
-    if (typeof originalIndex === 'number') updateQuestionStats(originalIndex, 'type', true);
+    const questionId = target.questionId;
+    if (typeof questionId === 'string') updateQuestionStats(questionId, 'type', true);
     inp.value = '';
     inp.className = 'match-ok';
     setTimeout(() => inp.className = '', 300);

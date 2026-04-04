@@ -6,6 +6,18 @@ const SLOW_RESPONSE_THRESHOLD = 8000;
 const LEVEL_XP_CURVE = 1.2;
 const BASE_XP_REWARD = 5;
 
+/* ── QUESTION ID HASHING ── */
+function generateQuestionId(q) {
+  const str = `${q.word}||${q.q}||${q.romaji}||${q.translation || ''}`;
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return `q-${Math.abs(hash).toString(36)}`;
+}
+
 /* ── PRIORITY SYSTEM ── */
 const MAX_DAYS = 30;
 const MAX_TIME_BONUS = 50;
@@ -42,7 +54,8 @@ function getConfidenceLevel(correctStreak, effectiveIncorrect) {
 }
 
 function getPriorityScore(questionIndex, gameType, weights) {
-  const id = `q-${questionIndex}`;
+  const q = questions[questionIndex];
+  const id = q ? generateQuestionId(q) : `q-${questionIndex}`;
   const stats = questionStats[id]?.[gameType];
   
   const effectiveIncorrect = getEffectiveIncorrect(stats);
@@ -133,8 +146,14 @@ function getPrioritizedDeck(questionsArr, gameType) {
   return result;
 }
 
-function updateQuestionStats(questionIndex, gameType, isCorrect, responseTime) {
-  const id = `q-${questionIndex}`;
+function updateQuestionStats(questionIdOrIndex, gameType, isCorrect, responseTime) {
+  let id;
+  if (typeof questionIdOrIndex === 'string') {
+    id = questionIdOrIndex;
+  } else {
+    const q = questions[questionIdOrIndex];
+    id = q ? generateQuestionId(q) : `q-${questionIdOrIndex}`;
+  }
   if (!questionStats[id]) {
     questionStats[id] = {};
   }
@@ -308,8 +327,8 @@ function computeGameTypeStats() {
     result[t] = { correct: 0, wrong: 0 };
   }
   
-  questions.forEach((q, index) => {
-    const id = `q-${index}`;
+  questions.forEach((q) => {
+    const id = generateQuestionId(q);
     const stats = questionStats[id];
     if (!stats) return;
     

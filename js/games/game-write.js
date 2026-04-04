@@ -62,7 +62,7 @@ function startWrite() {
         romaji: q.romaji,
         translation: q.translation,
         ex: q.ex || '',
-        originalIndex: questions.indexOf(q)
+        questionId: generateQuestionId(q)
       });
       kanjiCount++;
     });
@@ -178,7 +178,7 @@ function checkWriteAnswer() {
     const pts = Math.floor(BASE_XP_WRITE * Math.max(1, writeCombo) * 1.5 * (matchPercent / 100));
     writeScore += pts;
     playerEXP += pts;
-    updateQuestionStats(writeKanjiQueue[writeCurrentKanjiIdx].originalIndex, 'write', true, responseTime);
+    updateQuestionStats(writeKanjiQueue[writeCurrentKanjiIdx].questionId, 'write', true, responseTime);
     
     let msg = `✓ ${matchPercent}% Match! +${pts} EXP`;
     if (matchIndex > 0) msg += ` (#${matchIndex + 1})`;
@@ -190,7 +190,7 @@ function checkWriteAnswer() {
     if (!settings.disableGameOver) {
       writeHP = Math.max(0, writeHP - 20);
     }
-    updateQuestionStats(writeKanjiQueue[writeCurrentKanjiIdx].originalIndex, 'write', false, responseTime);
+    updateQuestionStats(writeKanjiQueue[writeCurrentKanjiIdx].questionId, 'write', false, responseTime);
     
     showToast('✗ Not recognized', 'err');
     
@@ -274,7 +274,7 @@ function skipWrite() {
     writeHP = Math.max(0, writeHP - 20);
   }
   
-  updateQuestionStats(writeKanjiQueue[writeCurrentKanjiIdx].originalIndex, 'write', false, 0);
+  updateQuestionStats(writeKanjiQueue[writeCurrentKanjiIdx].questionId, 'write', false, 0);
   
   const current = writeKanjiQueue[writeCurrentKanjiIdx];
   showToast(`⏭️ Skipped: ${current.kanji}`, 'err');

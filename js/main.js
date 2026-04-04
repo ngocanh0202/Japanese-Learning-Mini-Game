@@ -411,7 +411,7 @@ function renderStatsScreen() {
     const gameTypes = ['quiz', 'listen', 'flash', 'match', 'type', 'write'];
     
     questions.forEach((q, index) => {
-      const id = `q-${index}`;
+      const id = generateQuestionId(q);
       const stats = questionStats[id];
       if (!stats) {
         newItems++;

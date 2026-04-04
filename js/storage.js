@@ -118,7 +118,30 @@ function saveSettingsToStorage() {
   localStorage.setItem('jq_settings', JSON.stringify(settings));
 }
 
+function detectLegacyStats() {
+  return Object.keys(questionStats).some(key => /^q-\d+$/.test(key));
+}
+
+function migrateStatsToHashBased() {
+  const legacyKeys = Object.keys(questionStats).filter(key => /^q-\d+$/.test(key));
+  const migrated = {};
+  legacyKeys.forEach(key => {
+    const index = parseInt(key.replace('q-', ''), 10);
+    if (index >= 0 && index < questions.length) {
+      const newId = generateQuestionId(questions[index]);
+      migrated[newId] = questionStats[key];
+    }
+  });
+  Object.keys(migrated).forEach(id => {
+    questionStats[id] = migrated[id];
+  });
+  legacyKeys.forEach(key => delete questionStats[key]);
+  initQuestionStats(questions);
+  saveQuestionStats();
+}
+
 function loadQuestionStats() {
+  const alreadyMigrated = localStorage.getItem('jq_stats_migrated') === 'true';
   const stored = localStorage.getItem('jq_question_stats');
   if (stored) {
     try {
@@ -126,6 +149,16 @@ function loadQuestionStats() {
       seedIncorrectHistory();
     } catch (e) {
       questionStats = {};
+    }
+  }
+  if (!alreadyMigrated && detectLegacyStats()) {
+    try {
+      migrateStatsToHashBased();
+      localStorage.setItem('jq_stats_migrated', 'true');
+    } catch (e) {
+      console.warn('Stats migration failed, initializing empty stats:', e);
+      questionStats = {};
+      localStorage.setItem('jq_stats_migrated', 'true');
     }
   }
   initQuestionStats(questions);
@@ -167,8 +200,15 @@ function saveSessionHistory() {
 
 function initQuestionStats(questionsArr) {
   const gameTypes = ['quiz', 'listen', 'flash', 'match', 'type', 'write'];
-  questionsArr.forEach((q, index) => {
-    const id = `q-${index}`;
+  const usedIds = new Set(Object.keys(questionStats));
+  questionsArr.forEach((q) => {
+    let id = generateQuestionId(q);
+    if (usedIds.has(id)) {
+      let suffix = 1;
+      while (usedIds.has(`${id}-${suffix}`)) suffix++;
+      id = `${id}-${suffix}`;
+    }
+    usedIds.add(id);
     if (!questionStats[id]) {
       questionStats[id] = {};
     }
@@ -181,16 +221,10 @@ function initQuestionStats(questionsArr) {
 }
 
 function cleanupQuestionStats(deletedIndex) {
-  const id = `q-${deletedIndex}`;
+  const q = questions[deletedIndex];
+  if (!q) return;
+  const id = generateQuestionId(q);
   delete questionStats[id];
-  Object.keys(questionStats).forEach(key => {
-    const num = parseInt(key.replace('q-'), 10);
-    if (num > deletedIndex) {
-      const newKey = `q-${num - 1}`;
-      questionStats[newKey] = questionStats[key];
-      delete questionStats[key];
-    }
-  });
   saveQuestionStats();
 }
 
