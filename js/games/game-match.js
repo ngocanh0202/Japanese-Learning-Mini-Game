@@ -84,8 +84,8 @@ function startMatch() {
   pairCount = Math.min(settings.matchPairCount || 6, items.length);
   const matchItems = items.slice(0, pairCount);
   matchCards = shuffle(matchItems.flatMap((item, index) => ([
-    { cardId: `word-${index}`, pairId: index, kind: 'word', text: item.word, revealed: false, matched: false, animating: false },
-    { cardId: `label-${index}`, pairId: index, kind: 'label', text: getMatchLabel(item), revealed: false, matched: false, animating: false }
+    { cardId: `word-${index}`, pairId: index, kind: 'word', text: item.word, revealed: false, matched: false, animating: false, originalIndex: questions.indexOf(item) },
+    { cardId: `label-${index}`, pairId: index, kind: 'label', text: getMatchLabel(item), revealed: false, matched: false, animating: false, originalIndex: questions.indexOf(item) }
   ])));
   matchSelection = [];
   matchAttempts = 0;
@@ -118,7 +118,7 @@ function handleMatchCard(cardId) {
       matchFound++;
       matchCorrect++;
       matchSelection = [];
-      updateQuestionStats(first.pairId, 'match', true);
+      updateQuestionStats(first.originalIndex, 'match', true);
       showToast('✅ Correct match!', 'ok');
       updateMatchHUD();
       setTimeout(() => {
@@ -139,7 +139,7 @@ function handleMatchCard(cardId) {
       }
     } else {
       matchWrong++;
-      updateQuestionStats(first.pairId, 'match', false);
+      updateQuestionStats(first.originalIndex, 'match', false);
       setTimeout(() => {
         first.revealed = false;
         second.revealed = false;

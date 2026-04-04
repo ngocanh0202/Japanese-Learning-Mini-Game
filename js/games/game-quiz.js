@@ -14,7 +14,10 @@ let quizCorrect = 0;
 let quizWrong = 0;
 
 function startQuiz() {
-  quizDeck = getPrioritizedDeck(questions, 'quiz');
+  quizDeck = getPrioritizedDeck(questions, 'quiz').map(q => ({
+    ...q,
+    originalIndex: questions.indexOf(q)
+  }));
   if (settings.questionLimitEnabled) {
     quizDeck = quizDeck.slice(0, settings.questionLimit);
   }
@@ -89,7 +92,7 @@ function answerQuiz(chosen, btn, q, correctIndex) {
     const pts = Math.floor(BASE_XP_REWARD * Math.max(1, quizCombo) * 1.5);
     quizScore += pts;
     playerEXP += pts;
-    updateQuestionStats(quizIdx, 'quiz', true, responseTime);
+    updateQuestionStats(quizDeck[quizIdx].originalIndex, 'quiz', true, responseTime);
     showToast(`✅ Correct! +${pts} EXP 🔥 x${quizCombo}`, 'ok');
     showComboPopup(`+${pts} ⭐`, btn.getBoundingClientRect().left, btn.getBoundingClientRect().top);
   } else {
@@ -99,7 +102,7 @@ function answerQuiz(chosen, btn, q, correctIndex) {
     if (!settings.disableGameOver) {
       quizHP = Math.max(0, quizHP - 20);
     }
-    updateQuestionStats(quizIdx, 'quiz', false, responseTime);
+    updateQuestionStats(quizDeck[quizIdx].originalIndex, 'quiz', false, responseTime);
     showToast('❌ Wrong!', 'err');
     document.getElementById('screen-quiz').classList.add('shake');
     setTimeout(() => document.getElementById('screen-quiz').classList.remove('shake'), 400);
@@ -230,6 +233,8 @@ function handleQuizTimeout() {
   }
 
   showToast('⏱ Time’s up! Wrong answer.', 'err');
+  updateQuestionStats(quizDeck[quizIdx].originalIndex, 'quiz', false, undefined);
+  quizWrong++;
   quizDelayTimeout = setTimeout(() => {
     quizDelayTimeout = null;
     quizIdx++;

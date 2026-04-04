@@ -15,7 +15,10 @@ let listenWrong = 0;
 
 function startListen() {
   stopListenTimer();
-  listenDeck = getPrioritizedDeck(questions, 'listen');
+  listenDeck = getPrioritizedDeck(questions, 'listen').map(q => ({
+    ...q,
+    originalIndex: questions.indexOf(q)
+  }));
   if (settings.questionLimitEnabled) {
     listenDeck = listenDeck.slice(0, settings.questionLimit);
   }
@@ -125,7 +128,7 @@ function answerListen(choice, btn, q, correctIndex) {
     const points = Math.floor(BASE_XP_REWARD * Math.max(1, listenCombo) * 1.5);
     listenScore += points;
     playerEXP += points;
-    updateQuestionStats(listenIdx, 'listen', true, responseTime);
+    updateQuestionStats(listenDeck[listenIdx].originalIndex, 'listen', true, responseTime);
     showToast(`✅ Correct! +${points} EXP`, 'ok');
   } else {
     btn.classList.add('wrong');
@@ -134,7 +137,7 @@ function answerListen(choice, btn, q, correctIndex) {
     }
     listenCombo = 0;
     listenWrong++;
-    updateQuestionStats(listenIdx, 'listen', false, responseTime);
+    updateQuestionStats(listenDeck[listenIdx].originalIndex, 'listen', false, responseTime);
     showToast('❌ Wrong answer!', 'err');
     document.getElementById('screen-listen').classList.add('shake');
     setTimeout(() => document.getElementById('screen-listen').classList.remove('shake'), 400);
@@ -243,6 +246,8 @@ function handleListenTimeout() {
   }
 
   showToast('⏱ Time’s up! Wrong answer.', 'err');
+  updateQuestionStats(listenDeck[listenIdx].originalIndex, 'listen', false, undefined);
+  listenWrong++;
   listenDelayTimeout = setTimeout(() => {
     listenDelayTimeout = null;
     nextListen();

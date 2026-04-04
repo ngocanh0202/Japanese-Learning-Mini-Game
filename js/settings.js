@@ -231,7 +231,7 @@ function resetSettingsToDefault() {
     typeHintsEnabled: true,
     typeGameSpeed: 'medium',
     typeSpawnInterval: 'medium',
-    matchTimeLimit: 30,
+    matchTimeLimit: 60,
     matchPairCount: 6,
     shuffleAnswers: true,
     disableGameOver: false,
