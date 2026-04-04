@@ -186,6 +186,43 @@ function saveGamePrioritySettings() {
   saveSettingsToStorage();
 }
 
+function resetPlayerProgress() {
+  const confirmed = confirm(
+    '⚠️ WARNING: Reset All Progress\n\n' +
+    'This will reset:\n' +
+    '• HP to 100\n' +
+    '• EXP to 0\n' +
+    '• Level to 1\n' +
+    '• Daily streak to 0\n' +
+    '• All question stats\n' +
+    '• All session history\n\n' +
+    'This action CANNOT be undone.\n\n' +
+    'Are you sure you want to continue?'
+  );
+  
+  if (!confirmed) return;
+  
+  playerHP = 100;
+  playerEXP = 0;
+  playerLevel = 1;
+  playerCombo = 0;
+  questionStats = {};
+  sessionHistory = [];
+  
+  localStorage.removeItem('jq_hp');
+  localStorage.removeItem('jq_exp');
+  localStorage.removeItem('jq_level');
+  localStorage.removeItem('jq_combo');
+  localStorage.removeItem('jq_question_stats');
+  localStorage.removeItem('jq_session_history');
+  localStorage.removeItem('jq_daily_streak');
+  localStorage.removeItem('jq_streak_date');
+  
+  saveToStorage();
+  updateMenuUI();
+  showToast('💀 All progress has been reset!', 'err');
+}
+
 function resetSettingsToDefault() {
   settings = {
     quizTimerEnabled: false,

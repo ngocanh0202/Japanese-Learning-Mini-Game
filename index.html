@@ -384,8 +384,15 @@
           </label>
         </div>
       </div>
+      <div class="setting-block">
+        <h3>⚠️ Reset Progress</h3>
+        <p class="setting-desc">Reset all player progress including HP, EXP, Level, and daily streak. This action cannot be undone.</p>
+        <div class="btn-row" style="justify-content: center;">
+          <button class="action-btn btn-danger" onclick="resetPlayerProgress()">💀 Reset All Progress</button>
+        </div>
+      </div>
       <div class="btn-row" style="justify-content: center; margin-top: 12px;">
-        <button class="action-btn btn-secondary" onclick="resetSettingsToDefault()">🔄 Reset to Default</button>
+        <button class="action-btn btn-secondary" onclick="resetSettingsToDefault()">🔄 Reset Settings to Default</button>
       </div>
       <button class="back-btn" onclick="showScreen('screen-menu')">◀ BACK TO MENU</button>
     </div>
