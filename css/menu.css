@@ -47,18 +47,18 @@
 .btn-match::before { background: var(--accent2); }
 .btn-settings::before { background: var(--accent6); }
 .btn-listen::before { background: var(--accent7); }
-.btn-write::before { background: var(--accent); }
-.btn-stats::before { background: #5ad4f2; }
+.btn-write::before { background: #ff9f0a; }
+.btn-stats::before { background: #64d2ff; }
 
 .btn-quiz:hover { border-color: var(--accent4); box-shadow: inset 0 0 30px rgba(10,132,255,.08); }
 .btn-flash:hover { border-color: var(--accent5); box-shadow: inset 0 0 30px rgba(191,90,242,.08); }
 .btn-type:hover { border-color: var(--accent); box-shadow: inset 0 0 30px rgba(255,45,85,.08); }
 .btn-data:hover { border-color: var(--accent3); box-shadow: inset 0 0 30px rgba(48,209,88,.08); }
 .btn-match:hover { border-color: var(--accent2); box-shadow: inset 0 0 30px rgba(255,214,10,.08); }
-.btn-settings:hover { border-color: var(--accent6); box-shadow: inset 0 0 30px rgba(255,45,85,.08); }
-.btn-listen:hover { border-color: var(--accent7); box-shadow: inset 0 0 30px rgba(255,62,62,.08); }
-.btn-write:hover { border-color: var(--accent3); box-shadow: inset 0 0 30px rgba(48, 209, 88, 0.08); }
-.btn-stats:hover { border-color: #5ad4f2; box-shadow: inset 0 0 30px rgba(90,212,242,.08); }
+.btn-settings:hover { border-color: var(--accent6); box-shadow: inset 0 0 30px rgba(90,212,242,.08); }
+.btn-listen:hover { border-color: var(--accent7); box-shadow: inset 0 0 30px rgba(255,0,200,.08); }
+.btn-write:hover { border-color: #ff9f0a; box-shadow: inset 0 0 30px rgba(255,159,10,.08); }
+.btn-stats:hover { border-color: #64d2ff; box-shadow: inset 0 0 30px rgba(100,210,255,.08); }
 
 .btn-icon { font-size: 24px; flex-shrink: 0; }
 .btn-text { flex: 1; font-size: 15px; font-weight: 700; }
