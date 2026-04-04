@@ -145,6 +145,11 @@ function typeGameLoop() {
         if (typeof originalIndex === 'number') updateQuestionStats(originalIndex, 'type', false);
         updateTypeHUD();
         shakeScreen();
+        
+        if (typeHP <= 0) {
+          gameOverTyping(typeScore, typeCombo, false);
+          return;
+        }
       }
       w.done = true;
     } else {
@@ -257,10 +262,10 @@ function updateTypeHUD() {
   document.getElementById('type-hpbar').style.width = Math.max(0, typeHP) + '%';
 }
 
-function gameOverTyping(score, combo) {
+function gameOverTyping(score, combo, completed = true) {
   cancelAnimationFrame(typingLoop);
   typingLoop = null;
-  gameOver(score, combo, 'type', typeCorrect, typeWrong, true);
+  gameOver(score, combo, 'type', typeCorrect, typeWrong, completed);
   saveToStorage();
   if (gameStartTime) {
     const elapsed = (Date.now() - gameStartTime) / 60000;
