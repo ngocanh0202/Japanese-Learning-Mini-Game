@@ -61,7 +61,7 @@ function startTyping() {
 }
 
 function getTypeTarget(w) {
-  return settings.typeCompareMode === 'word' ? w.word : w.romaji;
+  return w.romaji;
 }
 
 function spawnWord() {
@@ -87,13 +87,13 @@ function pickColor() {
 }
 
 function getTypeSpawnInterval() {
-  const map = { slow: 640, medium: 480, fast: 360 };
-  return map[settings.typeSpawnInterval] || 480;
+  const map = { slow: 1200, medium: 900, fast: 600 };
+  return map[settings.typeSpawnInterval] || 900;
 }
 
 function getTypeGameSpeed() {
-  const map = { slow: 0.18, medium: 0.29, fast: 0.42 };
-  return map[settings.typeGameSpeed] || 0.29;
+  const map = { slow: 0.08, medium: 0.12, fast: 0.18 };
+  return map[settings.typeGameSpeed] || 0.12;
 }
 
 function getTypeHint(q) {
@@ -105,7 +105,7 @@ function getTypeHint(q) {
 
 function getTypeModeLabel() {
   const map = { slow: 'Slow', medium: 'Medium', fast: 'Fast' };
-  return `${map[settings.typeGameSpeed] || 'Medium'} (${settings.typeCompareMode === 'word' ? 'JP' : 'Romaji'})`;
+  return map[settings.typeGameSpeed] || 'Medium';
 }
 
 function typeGameLoop() {
@@ -117,11 +117,11 @@ function typeGameLoop() {
   const baseInterval = getTypeSpawnInterval();
   const baseSpeed = getTypeGameSpeed();
   spawnInterval = Math.max(220, baseInterval - Math.floor(typeScore / 50) * 10);
-  if(isStartGame == true){
-        isStartGame = false;
-        spawnInterval = 0;
+  if (isStartGame == true) {
+    isStartGame = false;
+    spawnInterval = 0;
   }
-  
+
   gameSpeed = baseSpeed + Math.floor(typeScore / 100) * 0.05;
 
   spawnTimer++;
@@ -203,9 +203,10 @@ function drawWord(w) {
   const target = fallingWords[0];
   if (!target) return;
 
+  const displayText = target.word;
   document.getElementById('type-target').textContent = (target.hint && settings.typeHintsEnabled)
-    ? `${target.word} — ${target.hint}`
-    : target.word;
+    ? `${displayText} — ${target.hint}`
+    : displayText;
 }
 
 function onTypeInput(e) {
@@ -220,49 +221,30 @@ function onTypeInput(e) {
 
   const target = fallingWords[0];
   if (!target) return;
+
+  const targetRomaji = target.romaji;
+  const inputHiragana = wanakana.toHiragana(val);
+  const targetHiragana = wanakana.toHiragana(targetRomaji);
   
-  if (settings.typeCompareMode === 'romaji') {
-    if (wanakana.toHiragana(val.trim().toLowerCase()) === wanakana.toHiragana(target.romaji.trim().toLowerCase())) {
-      typeCombo++;
-      typeCorrect++;
-      const pts = Math.floor(BASE_XP_REWARD * Math.max(1, typeCombo) * 1.5);
-      typeScore += pts;
-      playerEXP += pts;
-      target.done = true;
-      const originalIndex = target.originalIndex;
-      if (typeof originalIndex === 'number') updateQuestionStats(originalIndex, 'type', true);
-      inp.value = '';
-      inp.className = 'match-ok';
-      setTimeout(() => inp.className = '', 300);
-      showComboPopup(`+${pts} ⭐${typeCombo > 1 ? ` x${typeCombo}` : ''}`, target.x, target.y);
-      if (typeCombo > 1) showToast(`🔥 COMBO x${typeCombo}!`, 'ok');
-      updateTypeHUD();
-    } else if (wanakana.toHiragana(target.romaji.trim().toLowerCase()).startsWith(wanakana.toHiragana(val.trim().toLowerCase()))) {
-      inp.className = '';
-    } else {
-      inp.className = 'match-err';
-    }
+  if (inputHiragana === targetHiragana) {
+    typeCombo++;
+    typeCorrect++;
+    const pts = Math.floor(BASE_XP_REWARD * Math.max(1, typeCombo) * 1.5);
+    typeScore += pts;
+    playerEXP += pts;
+    target.done = true;
+    const originalIndex = target.originalIndex;
+    if (typeof originalIndex === 'number') updateQuestionStats(originalIndex, 'type', true);
+    inp.value = '';
+    inp.className = 'match-ok';
+    setTimeout(() => inp.className = '', 300);
+    showComboPopup(`+${pts} ${typeCombo > 1 ? 'x' + typeCombo : ''}`, target.x, target.y);
+    if (typeCombo > 1) showToast('COMBO x' + typeCombo + '!', 'ok');
+    updateTypeHUD();
+  } else if (targetHiragana.startsWith(inputHiragana)) {
+    inp.className = '';
   } else {
-    if (val === getTypeTarget(target).trim().toLowerCase()) {
-      typeCombo++;
-      typeCorrect++;
-      const pts = Math.floor(BASE_XP_REWARD * Math.max(1, typeCombo) * 1.5);
-      typeScore += pts;
-      playerEXP += pts;
-      target.done = true;
-      const originalIndex = target.originalIndex;
-      if (typeof originalIndex === 'number') updateQuestionStats(originalIndex, 'type', true);
-      inp.value = '';
-      inp.className = 'match-ok';
-      setTimeout(() => inp.className = '', 300);
-      showComboPopup(`+${pts} ⭐${typeCombo > 1 ? ` x${typeCombo}` : ''}`, target.x, target.y);
-      if (typeCombo > 1) showToast(`🔥 COMBO x${typeCombo}!`, 'ok');
-      updateTypeHUD();
-    } else if (getTypeTarget(target).trim().toLowerCase().startsWith(val.trim().toLowerCase())) {
-      inp.className = '';
-    } else {
-      inp.className = 'match-err';
-    }
+    inp.className = 'match-err';
   }
 }
 
@@ -272,7 +254,7 @@ function updateTypeHUD() {
   document.getElementById('type-combo').textContent = typeCombo;
   const modeEl = document.getElementById('type-mode');
   if (modeEl) modeEl.textContent = getTypeModeLabel();
-  document.getElementById('type-hpbar').style.width = `${Math.max(0, typeHP)}%`;
+  document.getElementById('type-hpbar').style.width = Math.max(0, typeHP) + '%';
 }
 
 function gameOverTyping(score, combo) {

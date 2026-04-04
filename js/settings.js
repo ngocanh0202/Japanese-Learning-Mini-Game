@@ -18,9 +18,7 @@ function renderSettingsScreen() {
   document.getElementById('type-spawn-interval').value = settings.typeSpawnInterval;
   document.getElementById('match-time-limit').value = settings.matchTimeLimit;
   document.getElementById('shuffle-answers-enabled').checked = settings.shuffleAnswers !== false;
-  document.getElementById('type-compare-mode').value = settings.typeCompareMode || 'romaji';
   document.getElementById('match-pair-count').value = settings.matchPairCount || 6;
-  updateTypeCompareWarning();
   updateAnimationBodyClass();
   
   const priorityEnabled = document.getElementById('priority-enabled');
@@ -61,12 +59,6 @@ function updateQuestionLimitUI() {
   }
 }
 
-function updateTypeCompareWarning() {
-  const warning = document.getElementById('type-compare-warning');
-  if (warning) {
-    warning.style.display = (settings.typeCompareMode === 'word') ? 'block' : 'none';
-  }
-}
 
 function updateSettingsFromUI() {
   settings.quizTimerEnabled = document.getElementById('quiz-timer-enabled').checked;
@@ -78,9 +70,7 @@ function updateSettingsFromUI() {
   settings.typeSpawnInterval = document.getElementById('type-spawn-interval').value;
   settings.matchTimeLimit = parseInt(document.getElementById('match-time-limit').value, 10);
   settings.shuffleAnswers = document.getElementById('shuffle-answers-enabled').checked;
-  settings.typeCompareMode = document.getElementById('type-compare-mode').value;
   settings.matchPairCount = parseInt(document.getElementById('match-pair-count').value, 10);
-  updateTypeCompareWarning();
   
   const priorityEnabled = document.getElementById('priority-enabled').checked;
   const priorityPanel = document.getElementById('priority-panel');
@@ -204,7 +194,6 @@ function resetSettingsToDefault() {
     typeHintsEnabled: true,
     typeGameSpeed: 'medium',
     typeSpawnInterval: 'medium',
-    typeCompareMode: 'romaji',
     matchTimeLimit: 30,
     matchPairCount: 6,
     shuffleAnswers: true,

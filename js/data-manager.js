@@ -366,7 +366,6 @@ function setStatus(id, msg, type) {
 
 /* ── DATA PREVIEW ── */
 function refreshDataPreview() {
-  const preview = document.getElementById('data-preview');
   const list = document.getElementById('question-list');
   if (!list) return;
 
@@ -378,7 +377,6 @@ function refreshDataPreview() {
     : questions;
 
   document.getElementById('current-count').textContent = filteredQuestions.length;
-  preview.innerHTML = filteredQuestions.map(q => `<span class="data-chip">${escapeHtml(q.word)}</span>`).join('');
 
   if (filteredQuestions.length === 0) {
     list.innerHTML = '<div class="empty-data">No matching questions found.</div>';

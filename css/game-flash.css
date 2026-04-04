@@ -74,3 +74,18 @@
   .flash-container { max-width: 550px; }
   .card-scene { max-height: 380px; }
 }
+
+/* Desktop 150% scale */
+@media (min-width: 1024px) {
+  .flash-container { gap: 30px; }
+  .card-scene { min-height: 300px; max-height: 675px; }
+  .card-face { gap: 18px; }
+  .card-hint { font-size: 9px; letter-spacing: 3px; }
+  .card-word { font-size: clamp(48px, 12vw, 80px); }
+  .card-reading { font-size: 48px; }
+  .card-explanation { font-size: 19.5px; }
+  .card-translation { font-size: 27px; margin-top: 18px; }
+  .flash-controls, .flash-actions { gap: 18px; }
+  .flash-btn, .btn-known, .btn-unknown { padding: 21px; font-size: 12px; }
+  .flash-bar-track { height: 12px; }
+}

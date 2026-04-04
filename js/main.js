@@ -28,7 +28,6 @@ let settings = {
   questionLimitEnabled: false,
   questionLimit: 20,
   shuffleAnswers: true,
-  typeCompareMode: 'romaji',
   matchPairCount: 6,
   priority: {
     enabled: true,
@@ -44,18 +43,7 @@ let settings = {
   }
 };
 
-/* ── INIT ── */
-function adjustZoom() {
-  if (window.innerWidth >= 1024) {
-    document.body.style.zoom = '150%';
-  } else {
-    document.body.style.zoom = '100%';
-  }
-}
-
 document.addEventListener('DOMContentLoaded', () => {
-  adjustZoom();
-  window.addEventListener('resize', adjustZoom);
   initStars();
   loadSettingsFromStorage();
   loadFromStorage();

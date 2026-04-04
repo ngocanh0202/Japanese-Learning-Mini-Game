@@ -117,7 +117,7 @@
   </div>
 
   <!-- DATA MANAGEMENT -->
-  <div id="screen-data" class="screen">
+  <div id="screen-data" class="screen screen-data">
     <div class="panel">
       <h2 class="panel-title">📦 DATA MANAGEMENT</h2>
       <div class="form-group">
@@ -206,7 +206,6 @@
       </div>
       <div class="current-data">
         <h3>Current items: <span id="current-count">0</span></h3>
-        <div id="data-preview" class="data-preview"></div>
         <div id="question-list" class="question-list"></div>
       </div>
       <button class="back-btn" onclick="showScreen('screen-menu')">◀ BACK TO MENU</button>
@@ -239,7 +238,7 @@
   </div>
 
   <!-- SETTINGS -->
-  <div id="screen-settings" class="screen">
+  <div id="screen-settings" class="screen screen-settings">
     <div class="panel">
       <h2 class="panel-title">⚙️ SETTINGS</h2>
       <div class="settings-group">
@@ -287,15 +286,6 @@
             <input type="checkbox" id="type-hints-enabled" class="toggle-input" onchange="updateSettingsFromUI()"/>
             <span class="toggle-slider"></span>
           </label>
-          <label class="setting-row"><span>Compare input against</span>
-            <select id="type-compare-mode" class="setting-select" onchange="updateSettingsFromUI()">
-              <option value="romaji">Romaji (recommended)</option>
-              <option value="word">Japanese word (requires IME)</option>
-            </select>
-          </label>
-          <div class="setting-warning" id="type-compare-warning" style="display:none; color: #ffd60a; font-size: 9px; margin-top: 4px;">
-            ⚠️ Requires Japanese IME input. Most browsers cannot type Japanese directly.
-          </div>
         </div>
         <div class="setting-block">
           <h3>Game 4 - MATCH</h3>

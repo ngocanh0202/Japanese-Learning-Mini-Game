@@ -2,7 +2,7 @@
    Listen Game Styles
    ================================================ */
 
-.listen-container { width: 100%; max-width: 680px; display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; }
+.listen-container { width: 100%; max-width: 1000px; display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; }
 
 #listen-instruction { min-height: auto; padding: 16px; }
 #listen-instruction #listen-audio-status { font-size: 14px; color: var(--accent2); font-family: var(--font-px); }
@@ -39,4 +39,16 @@
 .listen-timer {
   font-family: var(--font-px); font-size: 9px;
   color: var(--text-dim); text-align: center;
+}
+
+/* Desktop 150% scale */
+@media (min-width: 1024px) {
+  .listen-container { gap: 12px; }
+  #listen-instruction { padding: 24px; }
+  #listen-instruction #listen-audio-status { font-size: 21px; }
+  .listen-card { padding: 36px; }
+  .listen-word { font-size: 48px; margin-bottom: 12px; }
+  .listen-controls { gap: 18px; }
+  .listen-btn { width: 90px; height: 90px; font-size: 36px; }
+  .listen-timer { font-size: 13.5px; }
 }

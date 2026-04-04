@@ -17,6 +17,33 @@ const BASE_XP_WRITE = 8;
 let writeKanjiQueue = [];
 let writeCurrentKanjiIdx = 0;
 
+function syncCanvasResolution(id) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return false;
+  const rect = canvas.getBoundingClientRect();
+  console.log(`[syncCanvasResolution] ${id}: rect=${rect.width}x${rect.height}, canvas=${canvas.width}x${canvas.height}, css=${canvas.style.width}x${canvas.style.height}`);
+  if (rect.width > 0 && rect.height > 0) {
+    canvas.width = Math.round(rect.width);
+    canvas.height = Math.round(rect.height);
+    console.log(`[syncCanvasResolution] ${id}: synced to ${canvas.width}x${canvas.height}`);
+    return true;
+  }
+  console.log(`[syncCanvasResolution] ${id}: waiting for layout...`);
+  return false;
+}
+
+function initCanvasWithSync(id, callback) {
+  const tryInit = () => {
+    if (syncCanvasResolution(id)) {
+      KanjiCanvas.init(id);
+      if (callback) callback();
+    } else {
+      requestAnimationFrame(tryInit);
+    }
+  };
+  requestAnimationFrame(tryInit);
+}
+
 function getKanjiChars(word) {
   return word.split('').filter(c => /[\u4e00-\u9faf]/.test(c));
 }
@@ -54,8 +81,9 @@ function startWrite() {
   writeUseFallback = false;
   document.getElementById('modal-gameover').classList.add('hidden');
   
-  KanjiCanvas.init('writeCanvas');
-  renderWrite();
+  initCanvasWithSync('writeCanvas', () => {
+    renderWrite();
+  });
 }
 
 function renderWrite() {
@@ -339,28 +367,28 @@ async function showWritePracticeModal(word, romaji, translation) {
   practiceCurrentIdx = 0;
   
   // Initialize canvas FIRST to prevent erase error
-  KanjiCanvas.init('practiceCanvas');
-  
-  if (practiceKanjiList.length > 0) {
-    await renderPracticeKanjiPage();
-  } else {
-    showToast('No kanji found in this word', 'err');
-    document.getElementById('practice-target-char').textContent = word || '?';
-    document.getElementById('practice-hint-translation').textContent = translation || '---';
-    document.getElementById('practice-hint-romaji').textContent = romaji || '---';
-    document.getElementById('practice-pagination').classList.add('hidden');
-    KanjiCanvas.erase('practiceCanvas');
-  }
-  
-  document.getElementById('practice-fallback').classList.add('hidden');
-  document.getElementById('practice-candidates').classList.add('hidden');
-  document.getElementById('practice-feedback').classList.add('hidden');
-  
-  const inp = document.getElementById('practice-write-input');
-  inp.value = '';
-  inp.disabled = false;
-  
-  document.getElementById('write-practice-modal').classList.remove('hidden');
+  initCanvasWithSync('practiceCanvas', () => {
+    if (practiceKanjiList.length > 0) {
+      renderPracticeKanjiPage();
+    } else {
+      showToast('No kanji found in this word', 'err');
+      document.getElementById('practice-target-char').textContent = word || '?';
+      document.getElementById('practice-hint-translation').textContent = translation || '---';
+      document.getElementById('practice-hint-romaji').textContent = romaji || '---';
+      document.getElementById('practice-pagination').classList.add('hidden');
+      KanjiCanvas.erase('practiceCanvas');
+    }
+    
+    document.getElementById('practice-fallback').classList.add('hidden');
+    document.getElementById('practice-candidates').classList.add('hidden');
+    document.getElementById('practice-feedback').classList.add('hidden');
+    
+    const inp = document.getElementById('practice-write-input');
+    inp.value = '';
+    inp.disabled = false;
+    
+    document.getElementById('write-practice-modal').classList.remove('hidden');
+  });
 }
 
 async function renderPracticeKanjiPage() {
@@ -543,12 +571,8 @@ function checkWritePracticeFallback() {
   if (!val) return;
   
   let isCorrect = false;
-  if (settings.typeCompareMode === 'romaji') {
-    const targetRomaji = practiceWriteRomaji || '';
-    isCorrect = wanakana.toHiragana(val.toLowerCase()) === wanakana.toHiragana(targetRomaji.trim().toLowerCase());
-  } else {
-    isCorrect = val === currentKanji;
-  }
+  const targetRomaji = practiceWriteRomaji || '';
+  isCorrect = wanakana.toHiragana(val.toLowerCase()) === wanakana.toHiragana(targetRomaji.trim().toLowerCase());
   
   feedback.classList.remove('hidden');
   if (isCorrect) {

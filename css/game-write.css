@@ -6,8 +6,10 @@
   display: flex;
   gap: 24px;
   width: 100%;
-  max-width: 720px;
+  max-width: 1000px;
   margin-top: 16px;
+  flex: 1;
+  min-height: 0;
 }
 
 .write-left {
@@ -203,6 +205,8 @@
   border-radius: 8px;
   background: #fff;
   cursor: crosshair;
+  width: min(280px, 70vw);
+  height: min(280px, 70vw);
 }
 
 .write-canvas-controls {
@@ -401,4 +405,50 @@
   .practice-layout {
     flex-direction: column;
   }
+  
+  #writeCanvas,
+  #practiceCanvas {
+    width: min(260px, 70vw);
+    height: min(260px, 70vw);
+  }
+}
+
+/* Desktop 150% scale */
+@media (min-width: 1024px) {
+  .write-layout { gap: 36px; max-width: 1080px; margin-top: 24px; }
+  .write-left { gap: 24px; justify-content: center; }
+  .write-right { gap: 18px; justify-content: center; }
+  .write-target-char { font-size: 108px; min-height: 135px; }
+  .write-target-wrapper { gap: 24px; }
+  .write-hint-container { right: -150px; }
+  .hint-btn { padding: 6px 18px; font-size: 15px; }
+  .hint-popup { padding: 18px; min-width: 270px; }
+  .hint-popup .hint-row { font-size: 18px; }
+  .hint-popup .hint-label { font-size: 12px; min-width: 52px; }
+  .write-hints { gap: 12px; }
+  .write-hint-row { padding: 12px 18px; }
+  .write-hint-label { font-size: 12px; }
+  .write-hint-value { font-size: 21px; }
+  .translate-btn { padding: 3px 12px; font-size: 15px; }
+  .write-feedback { padding: 18px 24px; font-size: 21px; }
+  .write-canvas-area { gap: 18px; }
+  #writeCanvas,
+  #practiceCanvas { width: 480px; height: 480px; }
+  .canvas-btn { padding: 12px 18px; font-size: 12px; }
+  .write-post-check-controls { gap: 12px; margin-top: 12px; }
+  .write-fallback { padding: 18px; }
+  .fallback-msg { font-size: 18px; margin-bottom: 12px; }
+  .write-input-wrap { gap: 12px; }
+  .write-input-wrap input { padding: 15px 18px; font-size: 21px; }
+  .practice-modal-box { max-width: 960px; }
+  .practice-layout { gap: 30px; }
+  .practice-left { gap: 18px; }
+  .practice-right { gap: 15px; }
+  #practice-target-char { font-size: 72px; }
+  #practice-hint-translation,
+  #practice-hint-romaji { font-size: 18px; }
+  .practice-candidates .candidate-item { font-size: 18px; padding: 6px 15px; }
+  .practice-pagination { gap: 18px; padding: 12px 24px; }
+  .practice-pagination .page-btn { padding: 9px 18px; font-size: 18px; }
+  .practice-pagination #practice-page-info { font-size: 21px; min-width: 90px; }
 }

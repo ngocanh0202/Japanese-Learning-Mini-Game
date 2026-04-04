@@ -4,7 +4,7 @@
 
 /* Game HUD */
 .game-hud {
-  width: 100%; max-width: 700px;
+  width: 100%; max-width: 1000px;
   display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
   justify-content: space-between;
   padding: 10px 0 6px;
@@ -24,7 +24,7 @@
 }
 
 .hp-bar-wrap {
-  width: 100%; max-width: 700px;
+  width: 100%; max-width: 1000px;
   height: 6px; background: rgba(255,255,255,.06);
   border-radius: 3px; overflow: hidden; margin-bottom: 16px;
 }
@@ -33,4 +33,13 @@
   background: linear-gradient(90deg, #c0392b, var(--accent));
   transition: width .4s ease;
   box-shadow: var(--glow-r);
+}
+
+/* Desktop 150% scale */
+@media (min-width: 1024px) {
+  .game-hud { gap: 15px; padding: 15px 0 9px; }
+  .hud-back { font-size: 13.5px; padding: 9px 15px; }
+  .hud-title { font-size: 13.5px; }
+  .hud-stats { font-size: 12px; gap: 15px; }
+  .hp-bar-wrap { height: 9px; margin-bottom: 24px; }
 }

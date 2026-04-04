@@ -30,7 +30,7 @@
 
 /* ─── Panel & Settings ─────────────────────────── */
 .panel {
-  width: 100%; max-width: 680px;
+  width: 100%; max-width: 1000px;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -43,7 +43,7 @@
   border-bottom: 1px solid var(--border); padding-bottom: 12px;
 }
 .panel-stats {
-  max-width: 720px;
+  max-width: 1000px;
 }
 
 .setting-block {
@@ -193,7 +193,7 @@
   margin-top: 14px;
   width: 100%;
   overflow-x: auto;
-  max-height: 340px;
+  max-height: 350px;
   padding-bottom: 8px;
 }
 .table-scroll {
@@ -548,12 +548,12 @@
 
 /* ─── Quiz Game ───────────────────────────────────── */
 .quiz-container {
-  width: 100%; max-width: 680px;
+  width: 100%; max-width: 1000px;
   display: flex; flex-direction: column; gap: 14px;
   flex: 1;
 }
 .listen-container {
-  width: 100%; max-width: 680px;
+  width: 100%; max-width: 1000px;
   display: flex; flex-direction: column; gap: 8px;
   flex: 1;
 }
@@ -954,6 +954,141 @@
   .stats-table {
     min-width: 400px;
   }
+  
+  /* Screen Settings - Mobile */
+  .screen-settings .setting-block {
+    padding: 10px;
+  }
+  .screen-settings .setting-block h3 {
+    font-size: 8px;
+  }
+  .screen-settings .setting-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .screen-settings .setting-row > span {
+    font-size: 9px;
+  }
+  .screen-settings .setting-select {
+    width: 100%;
+    font-size: 9px;
+    padding: 8px;
+  }
+  .screen-settings .toggle-slider {
+    width: 36px;
+    height: 20px;
+  }
+  .screen-settings .toggle-slider::before {
+    width: 14px;
+    height: 14px;
+  }
+  .screen-settings .toggle-input:checked + .toggle-slider::before {
+    transform: translateX(16px);
+  }
+  
+  /* Screen Data - Mobile */
+  .screen-data .panel {
+    padding: 12px;
+  }
+  .screen-data .btn-row {
+    flex-wrap: wrap;
+  }
+  .screen-data .btn-row .action-btn {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 100px;
+    font-size: 7px;
+    padding: 8px 6px;
+  }
+  .screen-data .form-group {
+    margin-bottom: 10px;
+  }
+  .screen-data .form-group label {
+    font-size: 10px;
+  }
+  .screen-data .import-input {
+    font-size: 12px;
+    padding: 8px;
+  }
+  .screen-data #question-set-selector {
+    width: 100%;
+    font-size: 10px;
+    padding: 8px;
+  }
+  .screen-data .data-table {
+    font-size: 10px;
+  }
+  .screen-data .data-table th,
+  .screen-data .data-table td {
+    padding: 8px 6px;
+  }
+}
+
+/* ─── Screen Data - Font Family ───────────────── */
+.screen-data .form-group label {
+  font-family: var(--font-jp);
+}
+.screen-data .form-group input {
+  font-family: var(--font-jp);
+}
+.screen-data .import-input {
+  font-family: var(--font-jp);
+}
+.screen-data #question-set-selector {
+  font-family: var(--font-jp);
+}
+.screen-data .data-table th,
+.screen-data .data-table td {
+  font-family: var(--font-jp);
+}
+.screen-data .modal-textarea {
+  font-family: var(--font-jp);
+}
+.screen-data .status-msg {
+  font-family: var(--font-jp);
+}
+.screen-data .data-chip {
+  font-family: var(--font-jp);
+}
+.screen-data .current-data h3 {
+  font-family: var(--font-jp);
+}
+.screen-data .empty-data {
+  font-family: var(--font-jp);
+}
+.screen-data .action-btn,
+.screen-data .toggle-config-btn {
+  font-family: var(--font-jp);
+}
+.screen-data .page-btn,
+.screen-data .page-info {
+  font-family: var(--font-jp);
+}
+
+/* PC Styles - larger screens */
+@media (min-width: 1024px) {
+  .screen-settings .panel,
+  .screen-data .panel {
+    max-width: 800px;
+  }
+  .screen-settings .setting-block h3 {
+    font-size: 11px;
+  }
+  .screen-settings .setting-row {
+    font-size: 11px;
+  }
+  .screen-settings .setting-select {
+    font-size: 11px;
+    padding: 10px 12px;
+    min-width: 160px;
+  }
+  .screen-data .btn-row {
+    gap: 10px;
+  }
+  .screen-data .btn-row .action-btn {
+    font-size: 9px;
+    padding: 10px 16px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -991,4 +1126,101 @@
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
+}
+
+/* ─── Desktop 150% Scale ───────────────────────── */
+@media (min-width: 1024px) {
+  .menu-btn-container { width: 104%; padding-left: 2%; }
+  .back-btn { font-size: 12px; padding: 15px; }
+  .panel { max-width: 1080px; padding: 36px; gap: 24px; }
+  .panel-title { font-size: 15px; padding-bottom: 18px; }
+  .panel-stats { max-width: 1080px; }
+  .setting-block { padding: 24px; gap: 18px; }
+  .setting-block h3 { font-size: 15px; margin-bottom: 12px; }
+  .setting-row { font-size: 15px; gap: 18px; }
+  .setting-row input[type="range"] { width: 150px; height: 9px; }
+  .setting-row input[type="range"]::-webkit-slider-thumb { width: 21px; height: 21px; }
+  .setting-select { font-size: 15px; padding: 15px; }
+  .setting-desc { font-size: 13.5px; }
+  .form-group label { font-size: 18px; }
+  .form-group input { padding: 15px; font-size: 18px; }
+  .current-data h3 { font-size: 18px; }
+  .data-preview { max-height: 225px; }
+  .data-chip { font-size: 18px; padding: 4.5px 15px; }
+  .question-list { max-height: 525px; }
+  .data-table th,
+  .data-table td { padding: 18px 15px; font-size: 16.5px; }
+  .data-table th { font-size: 15px; }
+  .pagination { gap: 15px; margin-top: 18px; }
+  .page-btn { padding: 12px 18px; font-size: 15px; }
+  .page-info { font-size: 15px; }
+  .status-msg { font-size: 18px; }
+  .modal-textarea { font-size: 16.5px; padding: 18px; }
+  .toggle-config-btn { font-size: 21px; padding: 18px; }
+  .firebase-config-panel { padding: 24px; }
+  .firebase-config-panel input[type="text"] { padding: 12px 18px; font-size: 21px; }
+  .firebase-set-name { font-size: 21px; }
+  .import-input { font-size: 18px; padding: 18px; }
+  .empty-data { font-size: 16.5px; padding: 24px; }
+  .empty-message { font-size: 19.5px; padding: 30px; }
+  .loading { font-size: 19.5px; }
+  .error-message { font-size: 19.5px; }
+  .modal { padding: 30px; }
+  .modal-backdrop { padding: 30px; }
+  .modal-content { padding: 36px; gap: 24px; }
+  .modal-title { font-size: 18px; }
+  .modal-close { font-size: 27px; }
+  .modal-body { gap: 18px; }
+  .modal-buttons { gap: 15px; }
+  .import-mode-toggle { gap: 18px; }
+  .import-mode-toggle label { font-size: 15px; }
+  .import-toggle { gap: 18px; }
+  .import-toggle label { font-size: 15px; }
+  .firebase-config-section { margin: 24px 0; }
+  .firebase-config-group { gap: 18px; margin-bottom: 18px; }
+  .firebase-sets-list { gap: 18px; max-height: 600px; }
+  .firebase-set-item { padding: 18px; }
+  .firebase-set-info { gap: 6px; }
+  .firebase-set-count { font-size: 18px; }
+  .firebase-set-actions { gap: 12px; }
+  .firebase-set-actions button { font-size: 12px; padding: 12px 18px; }
+  .partition-row td { font-size: 15px; }
+  .table-scroll { min-width: 1020px; }
+  .data-table { min-width: 1020px; }
+  .stats-section { gap: 18px; }
+  .stats-section-title { font-size: 15px; margin-bottom: 12px; }
+  .stats-summary-grid { gap: 18px; }
+  .stats-summary-card { padding: 18px; }
+  .stats-summary-value { font-size: 21px; }
+  .stats-summary-label { font-size: 12px; }
+  .stats-summary-bar { height: 12px; }
+  .stats-table { min-width: 600px; }
+  .stats-table th,
+  .stats-table td { padding: 12px 15px; font-size: 15px; }
+  .stats-table th { font-size: 10.5px; }
+  .priority-panel { max-height: 300px; }
+  .priority-weight-item { padding: 15px; }
+  .weight-label { font-size: 16.5px; }
+  .weight-value { font-size: 13.5px; }
+  .weight-slider { width: 150px; height: 9px; }
+  .weight-slider::-webkit-slider-thumb { width: 21px; height: 21px; }
+  .weight-desc { font-size: 15px; }
+  .screen-data .panel { max-width: 1080px; }
+  .screen-data .btn-row .action-btn { font-size: 13.5px; padding: 15px 24px; }
+  .screen-data .form-group label { font-size: 15px; }
+  .screen-data .form-group input { font-size: 18px; padding: 15px; }
+  .screen-data .import-input { font-size: 18px; padding: 15px; }
+  .screen-data #question-set-selector { font-size: 15px; padding: 12px; }
+  .screen-data .data-table th,
+  .screen-data .data-table td { font-size: 16.5px; padding: 18px 15px; }
+  .screen-data .page-btn,
+  .screen-data .page-info { font-size: 15px; }
+  .screen-settings .panel { max-width: 1080px; }
+  .screen-settings .setting-block h3 { font-size: 15px; }
+  .screen-settings .setting-row { font-size: 15px; }
+  .screen-settings .setting-select { font-size: 15px; padding: 15px 18px; }
+  .screen-settings .toggle-slider { width: 66px; height: 36px; }
+  .screen-settings .toggle-slider::before { width: 27px; height: 27px; }
+  .screen-settings .toggle-input:checked + .toggle-slider::before { transform: translateX(24px); }
+  .screen-stats .panel { max-width: 1080px; }
 }

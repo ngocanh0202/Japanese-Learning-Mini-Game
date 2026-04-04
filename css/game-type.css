@@ -3,16 +3,16 @@
    ================================================ */
 
 #screen-type { align-items: center; }
-.type-container { width: 100%; max-width: 700px; display: flex; flex-direction: column; gap: 12px; }
-#type-canvas { width: 100%; height: min(380px, 45vh); border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg2); display: block; }
-.type-input-wrap { display: flex; gap: 12px; align-items: center; }
+.type-container { width: 100%; max-width: 1000px; display: flex; flex-direction: column; gap: 12px; flex: 1; min-height: 0; }
+#type-canvas { width: 100%; flex: 1; min-height: 200px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg2); display: block; }
+.type-input-wrap { display: flex; gap: 12px; align-items: center; flex-shrink: 0; }
 
 /* Match Game */
 #screen-match { align-items: center; }
 .match-container {
   flex: 1;
   width: 60%;
-  max-width: 800px;
+  max-width: 1000px;
   height: calc(100vh - 180px);
   display: flex;
   flex-direction: column;
@@ -121,4 +121,18 @@
   #type-input {
     width: 100%;
   }
+  #type-canvas {
+    min-height: 150px;
+  }
+}
+
+/* Desktop 150% scale */
+@media (min-width: 1024px) {
+  .type-container { gap: 18px; }
+  #type-canvas { min-height: 250px; }
+  .type-input-wrap { gap: 18px; }
+  .match-container { gap: 18px; padding: 24px 24px 0px 24px; }
+  .tile-card { font-size: clamp(24px, 2vw, 36px); }
+  .match-instructions { font-size: 21px; margin-bottom: 18px; }
+  .timer-display { font-size: 13.5px; margin-top: 18px; }
 }

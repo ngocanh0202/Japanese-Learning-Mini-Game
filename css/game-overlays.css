@@ -57,3 +57,12 @@
 @keyframes twinkle { 0%,100%{opacity:1;} 50%{opacity:.2;} }
 
 .shake { animation: shake .4s ease; }
+
+/* Desktop 150% scale */
+@media (min-width: 1024px) {
+  .gameover-box { padding: 60px 72px; gap: 30px; }
+  .go-title { font-size: 42px; }
+  .go-score { font-size: 21px; }
+  .toast { padding: 15px 33px; font-size: 12px; }
+  .combo-popup { font-size: 24px; }
+}

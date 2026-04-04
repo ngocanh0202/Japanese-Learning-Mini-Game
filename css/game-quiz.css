@@ -5,7 +5,7 @@
 /* Quiz Container */
 #screen-quiz { align-items: center; }
 .quiz-container { 
-  width: 100%; max-width: 680px; 
+  width: 100%; max-width: 1000px; 
   display: flex; flex-direction: column; gap: 14px; 
   flex: 1; min-height: 0;
 }
@@ -63,3 +63,14 @@
   cursor: pointer; transition: all .15s;
 }
 .next-btn:hover { filter: brightness(1.2); transform: translateY(-2px); }
+
+/* Desktop 150% scale */
+@media (min-width: 1024px) {
+  .quiz-container { gap: 21px; }
+  .question-card { padding: 42px 36px; min-height: 150px; font-size: clamp(22.5px, 3vw, 30px); }
+  .progress-info { font-size: 10.5px; }
+  .choices-grid { gap: 15px; }
+  .choice-btn { padding: 21px 24px; font-size: 22.5px; }
+  .explanation-box { padding: 21px 24px; font-size: 21px; }
+  .next-btn { padding: 18px 36px; font-size: 13.5px; }
+}

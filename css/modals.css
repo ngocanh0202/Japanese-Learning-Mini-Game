@@ -48,3 +48,17 @@
 .weight-value { font-family: var(--font-px); font-size: 9px; color: var(--accent2); }
 .weight-slider { width: 100%; accent-color: var(--accent4); }
 .weight-desc { font-size: 10px; color: var(--text-dim); margin-top: 6px; }
+
+/* Desktop 150% scale */
+@media (min-width: 1024px) {
+  .modal-box { width: min(92%, 840px); padding: 36px; gap: 24px; }
+  .modal-title { font-size: 18px; }
+  .modal-close { font-size: 27px; }
+  .modal-body { gap: 18px; }
+  .modal-buttons { gap: 15px; }
+  .priority-panel { max-height: 300px; padding-right: 12px; }
+  .priority-weight-item { padding: 15px; }
+  .weight-label { font-size: 16.5px; }
+  .weight-value { font-size: 13.5px; }
+  .weight-desc { font-size: 15px; margin-top: 9px; }
+}
