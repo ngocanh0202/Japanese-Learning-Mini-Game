@@ -1258,6 +1258,8 @@
   .stats-summary-value { font-size: 21px; }
   .stats-summary-label { font-size: 12px; }
   .stats-summary-bar { height: 12px; }
+  .mastery-circle { width: 120px; height: 120px; font-size: 28px; }
+  .mastery-label { font-size: 12px; }
   .stats-table { min-width: 600px; }
   .stats-table th,
   .stats-table td { padding: 12px 15px; font-size: 15px; }
