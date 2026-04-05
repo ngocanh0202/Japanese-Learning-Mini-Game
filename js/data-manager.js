@@ -169,13 +169,16 @@ async function importFirebaseSet(docId) {
     const data = doc.data();
     
     const newSet = {
+      id: 'set-' + Date.now(),
       name: (data.name || 'Imported Set') + ' (Firebase)',
       questions: data.questions || [],
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      firestoreId: docId
     };
 
     questionSets.push(newSet);
-    activeSetId = questionSets.length - 1;
+    activeSetId = newSet.id;
     questions = newSet.questions;
     saveQuestionSetsToStorage();
     refreshQuestionSetUI();
