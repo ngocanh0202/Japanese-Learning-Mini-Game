@@ -180,8 +180,11 @@ async function importFirebaseSet(docId) {
     questionSets.push(newSet);
     activeSetId = newSet.id;
     questions = newSet.questions;
+    dataPage = 1;
     saveQuestionSetsToStorage();
     refreshQuestionSetUI();
+    refreshDataPreview();
+    updateMenuUI();
     
     closeFirebaseSetsModal();
     showToast(`✅ Imported "${newSet.name}"`, 'ok');
