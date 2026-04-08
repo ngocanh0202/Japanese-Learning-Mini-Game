@@ -99,7 +99,6 @@ function loadFromStorage() {
 
   syncQuestionsFromActiveSet();
   normalizePlayerProgress();
-  saveToStorage();
 }
 
 function loadSettingsFromStorage() {
@@ -162,7 +161,6 @@ function loadQuestionStats() {
     }
   }
   initQuestionStats(questions);
-  saveQuestionStats();
 }
 
 function seedIncorrectHistory() {

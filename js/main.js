@@ -132,7 +132,7 @@ function showScreen(id) {
 ══════════════════════════════════════════════ */
 function updateMenuUI() {
   document.getElementById('menu-hp-val').textContent = playerHP;
-  document.getElementById('menu-exp-val').textContent = `${playerEXP}/${getXpForLevel(playerLevel)}`;
+  document.getElementById('menu-exp-val').textContent = `${formatNumber(playerEXP)}/${formatNumber(getXpForLevel(playerLevel))}`;
   document.getElementById('menu-hp').style.width = `${Math.max(0, playerHP)}%`;
   document.getElementById('menu-exp').style.width = `${Math.min(100, (playerEXP / getXpForLevel(playerLevel)) * 100)}%`;
   const levelEl = document.getElementById('menu-level');

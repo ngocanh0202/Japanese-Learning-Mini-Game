@@ -215,6 +215,12 @@ function getXpForLevel(level) {
   return Math.floor(XP_PER_LEVEL * Math.pow(LEVEL_XP_CURVE, level - 1));
 }
 
+function formatNumber(num) {
+  if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+  return num.toString();
+}
+
 function normalizePlayerProgress() {
   if (playerLevel < 1) playerLevel = 1;
   if (playerHP < 0) playerHP = 0;
