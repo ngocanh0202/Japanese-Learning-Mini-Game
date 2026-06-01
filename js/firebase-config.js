@@ -5,8 +5,57 @@
 let firebaseApp = null;
 let firebaseDb = null;
 let firestoreInitialized = false;
+const FIREBASE_SDK_URLS = [
+  'https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js',
+  'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js'
+];
+
+function isFirebaseSdkLoaded() {
+  return typeof firebase !== 'undefined' && firebase.initializeApp && firebase.firestore;
+}
+
+function loadFirebaseSdkScript(src) {
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${src}"]`);
+    if (existing) {
+      if (existing.dataset.loaded === 'true') {
+        resolve();
+        return;
+      }
+      existing.addEventListener('load', resolve, { once: true });
+      existing.addEventListener('error', reject, { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = src;
+    script.dataset.loaded = 'false';
+    script.onload = () => {
+      script.dataset.loaded = 'true';
+      resolve();
+    };
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+async function ensureFirebaseSdkLoaded() {
+  if (isFirebaseSdkLoaded()) return true;
+  for (const src of FIREBASE_SDK_URLS) {
+    await loadFirebaseSdkScript(src);
+  }
+  return isFirebaseSdkLoaded();
+}
 
 function initializeFirebase(config) {
+  if (typeof isNAServerConfigured === 'function' && isNAServerConfigured()) {
+    return false;
+  }
+
+  if (!isFirebaseSdkLoaded()) {
+    return false;
+  }
+
   if (!config || !config.projectId) {
     return false;
   }

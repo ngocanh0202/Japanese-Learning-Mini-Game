@@ -763,9 +763,19 @@
   <!-- TOAST NOTIFICATION -->
   <div id="toast" class="toast hidden"></div>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <!-- Firebase SDK is loaded only when NAServer mode is not active. -->
+  <script>
+    (function loadFirebaseSdkWhenNeeded() {
+      try {
+        const raw = localStorage.getItem('jq_naserver_config');
+        const config = raw ? JSON.parse(raw) : null;
+        if (config && config.baseUrl && config.token) return;
+      } catch (_) {
+      }
+      document.write('<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"><\\/script>');
+      document.write('<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"><\\/script>');
+    })();
+  </script>
   <!-- 3rd party libs -->
   <script src="lib/wanakana.min.js"></script>
   <script src="lib/kanji-canvas.min.js"></script>

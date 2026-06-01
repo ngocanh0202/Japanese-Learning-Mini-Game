@@ -9,22 +9,38 @@ let storedConfig = JSON.stringify({
   baseUrl: 'http://api.test/',
   token: 'abc'
 });
+let storedFirebaseConfig = JSON.stringify({ projectId: 'firebase-project' });
 const calls = [];
 
 const context = {
   console,
   localStorage: {
     getItem(key) {
-      return key === 'jq_naserver_config' ? storedConfig : null;
+      if (key === 'jq_naserver_config') return storedConfig;
+      if (key === 'jq_firebase_config') return storedFirebaseConfig;
+      return null;
     },
     setItem(key, value) {
       if (key === 'jq_naserver_config') storedConfig = value;
+      if (key === 'jq_firebase_config') storedFirebaseConfig = value;
+    },
+    removeItem(key) {
+      if (key === 'jq_naserver_config') storedConfig = null;
+      if (key === 'jq_firebase_config') storedFirebaseConfig = null;
     }
   },
   document: {
-    getElementById() {
+    getElementById(id) {
+      if (id === 'naserver-base-url') return { value: 'http://api.saved/' };
+      if (id === 'naserver-token') return { value: 'saved-token' };
       return null;
     }
+  },
+  showFirebaseSetsButton(show) {
+    calls.push({ type: 'firebaseButton', show });
+  },
+  showToast(message, type) {
+    calls.push({ type: 'toast', message, toastType: type });
   },
   fetch: async (url, options) => {
     calls.push({ url, options });
@@ -46,6 +62,15 @@ vm.runInContext(source, context);
   await vm.runInContext("requestNAServer('/api/japanese-learning-game/active-set')", context);
   assert.strictEqual(calls[0].url, 'http://api.test/api/japanese-learning-game/active-set');
   assert.strictEqual(calls[0].options.headers.Authorization, 'Bearer abc');
+
+  vm.runInContext('saveNAServerConfigFromUI()', context);
+  assert.strictEqual(storedFirebaseConfig, null);
+  assert.strictEqual(JSON.parse(storedConfig).baseUrl, 'http://api.saved/');
+  assert.strictEqual(JSON.parse(storedConfig).token, 'saved-token');
+  assert.deepStrictEqual(calls.find(call => call.type === 'firebaseButton'), {
+    type: 'firebaseButton',
+    show: false
+  });
 
   console.log('naserver api tests passed');
 })().catch(error => {

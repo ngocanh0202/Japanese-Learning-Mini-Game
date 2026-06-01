@@ -14,6 +14,10 @@ function getNAServerBaseUrl(config = loadNAServerConfig()) {
   return (config.baseUrl || '').replace(/\/+$/, '');
 }
 
+function isNAServerConfigured(config = loadNAServerConfig()) {
+  return !!(getNAServerBaseUrl(config) && config.token);
+}
+
 function getNAServerHeaders(config = loadNAServerConfig()) {
   const headers = { 'Content-Type': 'application/json' };
   if (config.token) headers.Authorization = `Bearer ${config.token}`;
@@ -55,6 +59,10 @@ function saveNAServerConfigFromUI() {
     token: tokenInput ? tokenInput.value.trim() : ''
   };
   localStorage.setItem(NASERVER_CONFIG_KEY, JSON.stringify(config));
+  if (isNAServerConfigured(config)) {
+    localStorage.removeItem('jq_firebase_config');
+    showFirebaseSetsButton(false);
+  }
   showToast('NAServer config saved', 'ok');
 }
 

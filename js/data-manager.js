@@ -475,7 +475,7 @@ function loadFirebaseConfig() {
   return null;
 }
 
-function saveFirebaseConfig() {
+async function saveFirebaseConfig() {
   const projectId = document.getElementById('firebase-project-id').value.trim();
 
   if (!projectId) {
@@ -494,6 +494,15 @@ function saveFirebaseConfig() {
   };
   
   localStorage.setItem('jq_firebase_config', JSON.stringify(config));
+  localStorage.removeItem('jq_naserver_config');
+
+  try {
+    const sdkLoaded = await ensureFirebaseSdkLoaded();
+    if (!sdkLoaded) throw new Error('Firebase SDK failed to load');
+  } catch (error) {
+    showToast(`笶・${error.message}`, 'err');
+    return;
+  }
   
   const initialized = initializeFirebase(config);
   if (initialized) {

@@ -56,10 +56,17 @@ document.addEventListener('DOMContentLoaded', () => {
   applyScanlinesVisibility();
   updateAnimationBodyClass();
   
-  const firebaseConfig = loadFirebaseConfig();
+  const naserverConfig = typeof loadNAServerConfig === 'function' ? loadNAServerConfig() : null;
+  const naserverConfigured = typeof isNAServerConfigured === 'function' && isNAServerConfigured(naserverConfig);
+  if (naserverConfigured) {
+    localStorage.removeItem('jq_firebase_config');
+  }
+  const firebaseConfig = naserverConfigured ? null : loadFirebaseConfig();
   if (firebaseConfig) {
     initializeFirebase(firebaseConfig);
     showFirebaseSetsButton(true);
+  } else {
+    showFirebaseSetsButton(false);
   }
   
   updateMenuUI();
