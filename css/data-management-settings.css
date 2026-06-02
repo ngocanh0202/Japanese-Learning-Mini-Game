@@ -1,0 +1,323 @@
+/* Data Management uses the same dark control theme as Settings. */
+.screen-data {
+  background: transparent;
+  color: var(--text);
+}
+
+.screen-data .data-dashboard-panel {
+  width: min(1080px, calc(100vw - 32px));
+  max-width: 1080px;
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+  padding: 36px;
+  gap: 24px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: none;
+}
+
+.screen-data .panel-title {
+  margin: 0;
+  padding-bottom: 18px;
+  color: var(--accent2);
+  border-bottom: 1px solid var(--border);
+  font-size: 28px;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.dashboard-header,
+.dashboard-card-header,
+.dashboard-control-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dashboard-header,
+.dashboard-card-header {
+  justify-content: space-between;
+}
+
+.dashboard-subtitle,
+.dashboard-card-header p {
+  margin: 6px 0 0;
+  color: var(--text-dim);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.dashboard-card,
+.screen-data .current-data {
+  width: 100%;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  box-shadow: none;
+}
+
+.dashboard-card h3,
+.screen-data .current-data h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.dashboard-control-row,
+.screen-data .btn-row {
+  flex-wrap: wrap;
+}
+
+.screen-data #question-set-selector,
+.screen-data #storage-provider-mode,
+.screen-data .form-group input,
+.screen-data .import-input,
+#naserver-auth-modal input,
+#firebase-config-panel input {
+  min-height: 44px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: none;
+  font-size: 15px;
+}
+
+.screen-data #question-set-selector,
+.screen-data #storage-provider-mode {
+  width: auto;
+  min-width: 240px;
+  max-width: 360px;
+  padding: 0 36px 0 14px;
+}
+
+.screen-data #question-set-selector:focus,
+.screen-data #storage-provider-mode:focus,
+.screen-data .form-group input:focus,
+.screen-data .import-input:focus,
+#naserver-auth-modal input:focus {
+  border-color: var(--accent4);
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.18);
+  outline: none;
+}
+
+.screen-data .action-btn,
+.screen-data .toggle-config-btn,
+.screen-data .back-btn,
+#naserver-auth-modal .action-btn {
+  min-height: 42px;
+  padding: 12px 16px;
+  color: #fff;
+  background: var(--accent4);
+  border: 1px solid var(--accent4);
+  border-radius: var(--radius);
+  box-shadow: none;
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.screen-data .btn-secondary,
+#naserver-auth-modal .btn-secondary {
+  color: var(--text);
+  background: var(--bg2);
+  border-color: var(--border);
+}
+
+.screen-data .btn-danger {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.screen-data .toggle-config-btn {
+  width: auto;
+}
+
+.screen-data .firebase-config-panel {
+  margin-top: 14px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.screen-data .firebase-config-panel.hidden {
+  display: none !important;
+}
+
+.screen-data .firebase-config-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.screen-data .form-group {
+  margin: 0;
+}
+
+.screen-data .form-group label,
+.screen-data .import-section > label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-dim);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.screen-data .import-section {
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.16);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.screen-data .import-toggle {
+  margin-bottom: 12px;
+}
+
+.screen-data .import-toggle label {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+}
+
+.screen-data .import-toggle input:checked + label {
+  color: #fff;
+  background: var(--accent4);
+  border-color: var(--accent4);
+}
+
+.screen-data .status-msg {
+  margin-top: 12px;
+}
+
+.screen-data .table-scroll {
+  min-width: 0;
+}
+
+.screen-data .data-table {
+  min-width: 720px;
+  color: var(--text);
+  background: var(--bg);
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.screen-data .data-table th {
+  color: var(--accent2);
+  background: var(--bg2);
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.screen-data .data-table td {
+  color: var(--text);
+  font-size: 15px;
+}
+
+#naserver-auth-modal .modal-box,
+.naserver-backup-panel {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.34);
+}
+
+#naserver-auth-modal .modal-title,
+.naserver-backup-label {
+  color: var(--accent2);
+  font-weight: 700;
+  text-transform: none;
+}
+
+#naserver-auth-modal .firebase-config-group {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+#naserver-auth-modal label {
+  color: var(--text-dim);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.naserver-backup-overlay {
+  background: rgba(10, 10, 18, 0.78);
+  backdrop-filter: blur(8px);
+}
+
+.naserver-backup-panel {
+  width: min(460px, calc(100vw - 32px));
+  padding: 24px;
+  text-align: left;
+}
+
+.naserver-backup-label {
+  margin-bottom: 16px;
+  font-size: 16px;
+}
+
+.naserver-backup-track {
+  height: 10px;
+  overflow: hidden;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.naserver-backup-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent4), var(--accent2));
+}
+
+.naserver-backup-percent {
+  margin-top: 10px;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: right;
+}
+
+@media (max-width: 760px) {
+  .screen-data .data-dashboard-panel {
+    width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px);
+    padding: 14px;
+  }
+
+  .dashboard-header,
+  .dashboard-card-header,
+  .dashboard-control-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .screen-data #question-set-selector,
+  .screen-data #storage-provider-mode,
+  .screen-data .action-btn,
+  .screen-data .toggle-config-btn,
+  .screen-data .back-btn {
+    width: 100%;
+    max-width: none;
+  }
+
+  .screen-data .firebase-config-group {
+    grid-template-columns: 1fr;
+  }
+
+  .screen-data .panel-title {
+    font-size: 22px;
+  }
+}

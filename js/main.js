@@ -70,6 +70,11 @@ document.addEventListener('DOMContentLoaded', () => {
     showFirebaseSetsButton(false);
   }
   if (typeof hydrateNAServerConfigUI === 'function') hydrateNAServerConfigUI();
+  if (naserverConfigured && typeof refreshQuestionSetsFromNAServer === 'function') {
+    refreshQuestionSetsFromNAServer().catch(error => {
+      showToast(`NAServer sets refresh failed: ${error.message}`, 'err');
+    });
+  }
   
   updateMenuUI();
   showScreen('screen-menu');
@@ -179,7 +184,28 @@ function showComboPopup(text, x, y) {
 /* ══════════════════════════════════════════════
    GAME ROUTER
 ══════════════════════════════════════════════ */
-function startGame(type) {
+async function startGame(type) {
+  if (typeof isNAServerBusy === 'function' && isNAServerBusy()) {
+    showToast('NAServer sync is running. Please wait.', 'info');
+    return;
+  }
+
+  if (typeof isNAServerConfigured === 'function' && isNAServerConfigured()) {
+    try {
+      if (typeof setNAServerBusy === 'function') setNAServerBusy(true, 'Preparing NAServer game deck...', 20);
+      await startServerGame(type);
+      if (questions.length === 0) {
+        showToast('No server questions available for this set.', 'err');
+        return;
+      }
+    } catch (error) {
+      showToast(`NAServer game start failed: ${error.message}`, 'err');
+      return;
+    } finally {
+      if (typeof setNAServerBusy === 'function') setNAServerBusy(false);
+    }
+  }
+
   if (questions.length === 0) {
     showToast('❌ No questions available! Please import data.', 'err');
     return;

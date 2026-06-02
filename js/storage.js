@@ -31,7 +31,11 @@ function getActiveQuestionSet() {
 
 function syncQuestionsFromActiveSet() {
   const set = getActiveQuestionSet();
-  questions = set ? set.questions : [];
+  if (set?.serverOnly && typeof isNAServerConfigured === 'function' && isNAServerConfigured()) {
+    questions = [];
+  } else {
+    questions = set ? set.questions : [];
+  }
   if (typeof initQuestionStats === 'function') {
     initQuestionStats(questions);
   }
@@ -40,6 +44,10 @@ function syncQuestionsFromActiveSet() {
 function updateActiveSetFromQuestions() {
   const set = getActiveQuestionSet();
   if (!set) return;
+  if (set.serverOnly && typeof isNAServerConfigured === 'function' && isNAServerConfigured()) {
+    set.updatedAt = new Date().toISOString();
+    return;
+  }
   if (questions !== set.questions) {
     set.questions = questions;
   }
@@ -165,6 +173,15 @@ function migrateStatsToHashBased() {
 }
 
 function loadQuestionStats() {
+  if (typeof isNAServerConfigured === 'function' && isNAServerConfigured()) {
+    questionStats = {};
+    if (typeof loadQuestionStatsFromNAServer === 'function') {
+      loadQuestionStatsFromNAServer().catch(error => {
+        if (typeof showToast === 'function') showToast(`NAServer stats load failed: ${error.message}`, 'err');
+      });
+    }
+    return;
+  }
   const alreadyMigrated = localStorage.getItem('jq_stats_migrated') === 'true';
   const stored = localStorage.getItem('jq_question_stats');
   if (stored) {
@@ -204,6 +221,7 @@ function seedIncorrectHistory() {
 }
 
 function saveQuestionStats() {
+  if (typeof isNAServerConfigured === 'function' && isNAServerConfigured()) return;
   localStorage.setItem('jq_question_stats', JSON.stringify(questionStats));
 }
 
@@ -246,7 +264,9 @@ function cleanupQuestionStats(deletedIndex) {
   if (!q) return;
   const id = getScopedQuestionId(q);
   delete questionStats[id];
-  saveQuestionStats();
+  if (!(typeof isNAServerConfigured === 'function' && isNAServerConfigured())) {
+    saveQuestionStats();
+  }
 }
 
 function createQuestionSet(name, items = []) {
@@ -266,24 +286,51 @@ function createQuestionSet(name, items = []) {
   return set;
 }
 
-function renameQuestionSet(id, name) {
+async function renameQuestionSet(id, name) {
   const set = questionSets.find(s => s.id === id);
   if (!set) return;
+  if (set.serverOnly && !set.canEdit) {
+    showToast('You only have view permission for this set', 'err');
+    return;
+  }
   if (!name || !name.trim()) return;
+  if (set.serverOnly && typeof renameQuestionSetOnNAServer === 'function') {
+    try {
+      await renameQuestionSetOnNAServer(id, name.trim());
+      showToast('NAServer question set renamed', 'ok');
+    } catch (error) {
+      showToast(`Rename failed: ${error.message}`, 'err');
+    }
+    return;
+  }
   set.name = name.trim();
   set.updatedAt = new Date().toISOString();
   saveQuestionSetsToStorage();
   refreshQuestionSetUI();
 }
 
-function deleteQuestionSet(id) {
+async function deleteQuestionSet(id) {
   if (questionSets.length <= 1) {
     alert('Cannot delete the last question set.');
     return;
   }
   const index = questionSets.findIndex(s => s.id === id);
   if (index === -1) return;
+  const target = questionSets[index];
+  if (target.serverOnly && !target.canDelete) {
+    showToast('Only owner/admin can delete this shared set', 'err');
+    return;
+  }
   if (!confirm('Delete this question set?')) return;
+  if (target.serverOnly && typeof deleteQuestionSetOnNAServer === 'function') {
+    try {
+      await deleteQuestionSetOnNAServer(id);
+      showToast('NAServer question set deleted', 'ok');
+    } catch (error) {
+      showToast(`Delete failed: ${error.message}`, 'err');
+    }
+    return;
+  }
   questionSets.splice(index, 1);
   if (!questionSets.some(s => s.id === activeSetId)) {
     activeSetId = questionSets[0].id;
@@ -295,9 +342,25 @@ function deleteQuestionSet(id) {
   updateMenuUI();
 }
 
-function switchQuestionSet(id) {
+async function switchQuestionSet(id) {
   if (!questionSets.some(s => s.id === id)) return;
   activeSetId = id;
+  if (typeof isNAServerConfigured === 'function' && isNAServerConfigured()) {
+    try {
+      if (typeof setNAServerBusy === 'function') setNAServerBusy(true, 'Switching NAServer question set...', 25);
+      await setActiveQuestionSetOnNAServer(id);
+      questions = [];
+      saveQuestionSetsToStorage();
+      refreshQuestionSetUI();
+      refreshDataPreview();
+      updateMenuUI();
+    } catch (error) {
+      showToast(`Switch set failed: ${error.message}`, 'err');
+    } finally {
+      if (typeof setNAServerBusy === 'function') setNAServerBusy(false);
+    }
+    return;
+  }
   syncQuestionsFromActiveSet();
   saveToStorage();
   refreshQuestionSetUI();
@@ -311,14 +374,29 @@ function refreshQuestionSetUI() {
   const activeSet = getActiveQuestionSet();
 
   if (selector) {
-    selector.innerHTML = questionSets.map(set => `<option value="${escapeHtml(set.id)}"${set.id === activeSet?.id ? ' selected' : ''}>${escapeHtml(set.name)}</option>`).join('');
+    selector.innerHTML = questionSets.map(set => {
+      const count = set.serverOnly ? (set.question_count ?? 0) : (set.questions?.length || 0);
+      const permission = set.serverOnly && set.permission ? ` · ${set.permission}` : '';
+      return `<option value="${escapeHtml(set.id)}"${set.id === activeSet?.id ? ' selected' : ''}>${escapeHtml(set.name)} (${count})${escapeHtml(permission)}</option>`;
+    }).join('');
   }
   if (activeNameEl) {
     activeNameEl.textContent = activeSet ? activeSet.name : 'No active set';
   }
   if (activeSet && document.getElementById('current-count')) {
-    document.getElementById('current-count').textContent = activeSet.questions.length;
+    document.getElementById('current-count').textContent = activeSet.serverOnly ? (activeSet.question_count || 0) : activeSet.questions.length;
   }
+  const renameBtn = document.getElementById('btn-rename-set');
+  const deleteBtn = document.getElementById('btn-delete-set');
+  const shareBtn = document.getElementById('btn-share-set');
+  const backupBtn = document.getElementById('btn-backup');
+  const canEdit = !activeSet?.serverOnly || !!activeSet?.canEdit;
+  const canDelete = !activeSet?.serverOnly || !!activeSet?.canDelete;
+  const canShare = !!activeSet?.serverOnly && !!activeSet?.canShare;
+  if (renameBtn) renameBtn.disabled = !canEdit;
+  if (deleteBtn) deleteBtn.disabled = !canDelete;
+  if (shareBtn) shareBtn.disabled = !canShare;
+  if (backupBtn) backupBtn.disabled = !!activeSet?.serverOnly && !canEdit;
 }
 
 function promptCreateQuestionSet() {
@@ -341,6 +419,27 @@ function deleteActiveQuestionSet() {
   const activeSet = getActiveQuestionSet();
   if (!activeSet) return;
   deleteQuestionSet(activeSet.id);
+}
+
+async function promptShareQuestionSet() {
+  const activeSet = getActiveQuestionSet();
+  if (!activeSet?.serverOnly || !activeSet.canShare) {
+    showToast('Only owner/admin can share this server set', 'err');
+    return;
+  }
+  const email = prompt('Enter user email to share this set:');
+  if (!email || !email.trim()) return;
+  const permission = (prompt('Permission: view, edit, or admin', 'view') || 'view').trim().toLowerCase();
+  if (!['view', 'edit', 'admin'].includes(permission)) {
+    showToast('Invalid share permission', 'err');
+    return;
+  }
+  try {
+    await shareQuestionSetOnNAServer(activeSet.id, email.trim(), permission);
+    showToast('Question set shared', 'ok');
+  } catch (error) {
+    showToast(`Share failed: ${error.message}`, 'err');
+  }
 }
 
 function applyScanlinesVisibility() {

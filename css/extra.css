@@ -686,7 +686,8 @@
 }
 
 /* ─── Question Set Selector ─────────────────────── */
-#question-set-selector {
+#question-set-selector,
+#storage-provider-mode {
   min-width: 180px;
   max-width: 280px;
   padding: 10px 36px 10px 14px;
@@ -706,19 +707,402 @@
   background-position: right 10px center;
   background-size: 16px;
 }
-#question-set-selector:hover {
+#question-set-selector:hover,
+#storage-provider-mode:hover {
   border-color: var(--accent4);
 }
-#question-set-selector:focus {
+#question-set-selector:focus,
+#storage-provider-mode:focus {
   outline: none;
   border-color: var(--accent4);
   box-shadow: 0 0 0 3px rgba(10,132,255,0.15);
 }
+
+/* ─── Dashboard UI refresh ─────────────────────── */
+:root {
+  --font-px: "Segoe UI", Arial, sans-serif;
+  --font-jp: "Segoe UI", Arial, sans-serif;
+  --dashboard-bg: rgba(246, 248, 252, 0.96);
+  --dashboard-card: rgba(255, 255, 255, 0.98);
+  --dashboard-border: rgba(148, 163, 184, 0.34);
+  --dashboard-text: #172033;
+  --dashboard-muted: #667085;
+  --dashboard-primary: #2563eb;
+  --dashboard-danger: #dc2626;
 }
-#question-set-selector:focus {
+
+body,
+button,
+input,
+select,
+textarea {
+  font-family: "Segoe UI", Arial, sans-serif;
+  letter-spacing: 0;
+}
+
+.screen-data {
+  background: linear-gradient(180deg, rgba(238, 242, 247, 0.96), rgba(226, 232, 240, 0.96));
+  color: var(--dashboard-text);
+}
+
+.screen-data .data-dashboard-panel {
+  width: min(1180px, calc(100vw - 32px));
+  max-width: 1180px;
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+  gap: 16px;
+  padding: 24px;
+  background: var(--dashboard-bg);
+  color: var(--dashboard-text);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 8px;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.16);
+}
+
+.dashboard-header,
+.dashboard-card-header,
+.dashboard-control-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dashboard-header,
+.dashboard-card-header {
+  justify-content: space-between;
+}
+
+.screen-data .panel-title {
+  margin: 0;
+  padding: 0;
+  color: var(--dashboard-text);
+  border: 0;
+  font-size: 28px;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.dashboard-subtitle,
+.dashboard-card-header p {
+  margin: 4px 0 0;
+  color: var(--dashboard-muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.dashboard-card {
+  width: 100%;
+  padding: 18px;
+  background: var(--dashboard-card);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.dashboard-card h3,
+.screen-data .current-data h3 {
+  margin: 0;
+  color: var(--dashboard-text);
+  font-size: 17px;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.dashboard-control-row,
+.screen-data .btn-row {
+  flex-wrap: wrap;
+}
+
+.screen-data #question-set-selector,
+.screen-data #storage-provider-mode,
+.screen-data .form-group input,
+.screen-data .import-input,
+#naserver-auth-modal input,
+#firebase-config-panel input {
+  min-height: 42px;
+  color: var(--dashboard-text);
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  box-shadow: none;
+}
+
+.screen-data #question-set-selector,
+.screen-data #storage-provider-mode {
+  min-width: 240px;
+  max-width: 360px;
+  padding: 0 36px 0 12px;
+}
+
+.screen-data #question-set-selector:focus,
+.screen-data #storage-provider-mode:focus,
+.screen-data .form-group input:focus,
+.screen-data .import-input:focus,
+#naserver-auth-modal input:focus {
+  border-color: var(--dashboard-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
   outline: none;
-  border-color: var(--accent4);
-  box-shadow: 0 0 0 2px rgba(10,132,255,0.15);
+}
+
+.screen-data .action-btn,
+.screen-data .toggle-config-btn,
+.screen-data .back-btn,
+#naserver-auth-modal .action-btn {
+  min-height: 40px;
+  padding: 10px 14px;
+  color: #fff;
+  background: var(--dashboard-primary);
+  border: 1px solid var(--dashboard-primary);
+  border-radius: 6px;
+  box-shadow: none;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: none;
+}
+
+.screen-data .action-btn:hover,
+.screen-data .toggle-config-btn:hover,
+.screen-data .back-btn:hover,
+#naserver-auth-modal .action-btn:hover {
+  filter: brightness(0.96);
+  transform: none;
+}
+
+.screen-data .btn-secondary,
+#naserver-auth-modal .btn-secondary {
+  color: var(--dashboard-text);
+  background: #fff;
+  border-color: #cbd5e1;
+}
+
+.screen-data .btn-danger {
+  color: #fff;
+  background: var(--dashboard-danger);
+  border-color: var(--dashboard-danger);
+}
+
+.screen-data .toggle-config-btn {
+  width: auto;
+}
+
+.screen-data .firebase-config-panel {
+  margin-top: 14px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.screen-data .firebase-config-panel.hidden {
+  display: none !important;
+}
+
+.screen-data .firebase-config-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.screen-data .form-group {
+  margin: 0;
+}
+
+.screen-data .form-group label,
+.screen-data .import-section > label {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--dashboard-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.screen-data .import-section {
+  margin-top: 16px;
+  padding: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.screen-data .import-toggle {
+  margin-bottom: 12px;
+}
+
+.screen-data .status-msg {
+  margin-top: 12px;
+}
+
+.screen-data .current-data {
+  width: 100%;
+  padding: 18px;
+  background: var(--dashboard-card);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 8px;
+}
+
+.screen-data .table-scroll {
+  min-width: 0;
+}
+
+.screen-data .data-table {
+  min-width: 720px;
+  color: var(--dashboard-text);
+  background: #fff;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.screen-data .data-table th {
+  color: #475467;
+  background: #f8fafc;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.screen-data .data-table td {
+  font-size: 14px;
+}
+
+#naserver-auth-modal .modal-box {
+  width: min(420px, calc(100vw - 32px));
+  padding: 24px;
+  background: #fff;
+  color: var(--dashboard-text);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 8px;
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.24);
+}
+
+#naserver-auth-modal .modal-title {
+  color: var(--dashboard-text);
+  font-size: 20px;
+  font-weight: 700;
+  text-transform: none;
+}
+
+#naserver-auth-modal .firebase-config-group {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+#naserver-auth-modal label {
+  color: var(--dashboard-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.naserver-backup-overlay {
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(8px);
+}
+
+.naserver-backup-panel {
+  width: min(460px, calc(100vw - 32px));
+  padding: 24px;
+  background: #fff;
+  color: var(--dashboard-text);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 8px;
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.24);
+}
+
+.naserver-backup-label {
+  margin-bottom: 16px;
+  color: var(--dashboard-text);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.naserver-backup-track {
+  height: 10px;
+  background: #e2e8f0;
+  border: 0;
+  border-radius: 999px;
+}
+
+.naserver-backup-fill {
+  background: linear-gradient(90deg, #2563eb, #14b8a6);
+}
+
+.naserver-backup-percent {
+  margin-top: 10px;
+  color: var(--dashboard-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  .screen-data .data-dashboard-panel {
+    width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px);
+    padding: 14px;
+  }
+
+  .dashboard-header,
+  .dashboard-card-header,
+  .dashboard-control-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .screen-data #question-set-selector,
+  .screen-data #storage-provider-mode,
+  .screen-data .action-btn,
+  .screen-data .toggle-config-btn,
+  .screen-data .back-btn {
+    width: 100%;
+    max-width: none;
+  }
+
+  .screen-data .firebase-config-group {
+    grid-template-columns: 1fr;
+  }
+
+  .screen-data .panel-title {
+    font-size: 22px;
+  }
+}
+
+/* ─── Final Settings-theme lock for Data Management ─ */
+body .screen-data .data-dashboard-panel {
+  background: var(--panel);
+  color: var(--text);
+  border-color: var(--border);
+  border-radius: var(--radius);
+  box-shadow: none;
+}
+
+body .screen-data .panel-title {
+  color: var(--accent2);
+  border-bottom: 1px solid var(--border);
+}
+
+body .screen-data .dashboard-card,
+body .screen-data .current-data {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+body .screen-data .dashboard-subtitle,
+body .screen-data .dashboard-card-header p,
+body .screen-data .form-group label,
+body .screen-data .import-section > label {
+  color: var(--text-dim);
+}
+
+body .screen-data #question-set-selector,
+body .screen-data #storage-provider-mode,
+body .screen-data .form-group input,
+body .screen-data .import-input {
+  color: var(--text);
+  background: var(--bg);
+  border-color: var(--border);
 }
 
 /* ─── Mastery Circles ────────────────────────────── */
@@ -1193,6 +1577,479 @@
 }
 
 /* ─── Desktop 150% Scale ───────────────────────── */
+.screen-data #storage-provider-mode {
+  font-family: var(--font-jp);
+}
+
+.server-account-panel,
+#naserver-sync-actions,
+.firebase-config-panel > .form-group + .form-group,
+.firebase-config-panel > .btn-row {
+  margin-top: 14px;
+}
+
+.menu-btn.is-disabled,
+.menu-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.naserver-backup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(8px);
+}
+
+.naserver-backup-panel {
+  width: min(460px, calc(100vw - 32px));
+  border: 1px solid var(--dashboard-border);
+  border-radius: 8px;
+  padding: 24px;
+  background: #fff;
+  color: var(--dashboard-text);
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.24);
+  text-align: left;
+}
+
+.naserver-backup-label {
+  margin-bottom: 16px;
+  color: var(--dashboard-text);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.naserver-backup-track {
+  height: 10px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.naserver-backup-fill {
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb, #14b8a6);
+  transition: width 0.2s ease;
+}
+
+.naserver-backup-percent {
+  margin-top: 10px;
+  color: var(--dashboard-muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* ─── Settings-theme lock: final cascade ───────── */
+body .screen-data .data-dashboard-panel {
+  background: var(--panel);
+  color: var(--text);
+  border-color: var(--border);
+  border-radius: var(--radius);
+  box-shadow: none;
+}
+
+body .screen-data .panel-title {
+  color: var(--accent2);
+  border-bottom: 1px solid var(--border);
+}
+
+body .screen-data .dashboard-card,
+body .screen-data .current-data {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+body .screen-data .dashboard-subtitle,
+body .screen-data .dashboard-card-header p,
+body .screen-data .form-group label,
+body .screen-data .import-section > label {
+  color: var(--text-dim);
+}
+
+body .screen-data #question-set-selector,
+body .screen-data #storage-provider-mode,
+body .screen-data .form-group input,
+body .screen-data .import-input {
+  color: var(--text);
+  background: var(--bg);
+  border-color: var(--border);
+}
+
+body .screen-data .import-section {
+  background: rgba(0, 0, 0, 0.16);
+  border-color: var(--border);
+}
+
+body .naserver-backup-panel {
+  background: var(--panel);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+body .naserver-backup-label {
+  color: var(--text);
+}
+
+body .naserver-backup-track {
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+body .naserver-backup-fill {
+  background: linear-gradient(90deg, var(--accent4), var(--accent2));
+}
+
+body .naserver-backup-percent {
+  color: var(--text-dim);
+}
+
+/* ─── Data Management: match Settings theme ─────── */
+.screen-data {
+  background: transparent;
+  color: var(--text);
+}
+
+.screen-data .data-dashboard-panel {
+  width: min(1080px, calc(100vw - 32px));
+  max-width: 1080px;
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+  padding: 36px;
+  gap: 24px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: none;
+}
+
+.dashboard-header,
+.dashboard-card-header,
+.dashboard-control-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dashboard-header,
+.dashboard-card-header {
+  justify-content: space-between;
+}
+
+.screen-data .panel-title {
+  margin: 0;
+  padding-bottom: 18px;
+  color: var(--accent2);
+  border-bottom: 1px solid var(--border);
+  font-size: 28px;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.dashboard-subtitle,
+.dashboard-card-header p {
+  margin: 6px 0 0;
+  color: var(--text-dim);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.dashboard-card,
+.screen-data .current-data {
+  width: 100%;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: none;
+}
+
+.dashboard-card h3,
+.screen-data .current-data h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.dashboard-control-row,
+.screen-data .btn-row {
+  flex-wrap: wrap;
+}
+
+.screen-data #question-set-selector,
+.screen-data #storage-provider-mode,
+.screen-data .form-group input,
+.screen-data .import-input,
+#naserver-auth-modal input,
+#firebase-config-panel input {
+  min-height: 44px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: none;
+  font-size: 15px;
+}
+
+.screen-data #question-set-selector,
+.screen-data #storage-provider-mode {
+  width: auto;
+  min-width: 240px;
+  max-width: 360px;
+  padding: 0 36px 0 14px;
+}
+
+.screen-data #question-set-selector:focus,
+.screen-data #storage-provider-mode:focus,
+.screen-data .form-group input:focus,
+.screen-data .import-input:focus,
+#naserver-auth-modal input:focus {
+  border-color: var(--accent4);
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.18);
+  outline: none;
+}
+
+.screen-data .action-btn,
+.screen-data .toggle-config-btn,
+.screen-data .back-btn,
+#naserver-auth-modal .action-btn {
+  min-height: 42px;
+  padding: 12px 16px;
+  color: #fff;
+  background: var(--accent4);
+  border: 1px solid var(--accent4);
+  border-radius: var(--radius);
+  box-shadow: none;
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.screen-data .action-btn:hover,
+.screen-data .toggle-config-btn:hover,
+.screen-data .back-btn:hover,
+#naserver-auth-modal .action-btn:hover {
+  filter: brightness(1.08);
+  transform: none;
+}
+
+.screen-data .btn-secondary,
+#naserver-auth-modal .btn-secondary {
+  color: var(--text);
+  background: var(--bg2);
+  border-color: var(--border);
+}
+
+.screen-data .btn-danger {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.screen-data .toggle-config-btn {
+  width: auto;
+}
+
+.screen-data .firebase-config-panel {
+  margin-top: 14px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.screen-data .firebase-config-panel.hidden {
+  display: none !important;
+}
+
+.screen-data .firebase-config-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.screen-data .form-group {
+  margin: 0;
+}
+
+.screen-data .form-group label,
+.screen-data .import-section > label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-dim);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.screen-data .import-section {
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.16);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.screen-data .import-toggle {
+  margin-bottom: 12px;
+}
+
+.screen-data .import-toggle label {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+}
+
+.screen-data .import-toggle input:checked + label {
+  color: #fff;
+  background: var(--accent4);
+  border-color: var(--accent4);
+}
+
+.screen-data .status-msg {
+  margin-top: 12px;
+}
+
+.screen-data .table-scroll {
+  min-width: 0;
+}
+
+.screen-data .data-table {
+  min-width: 720px;
+  color: var(--text);
+  background: var(--bg);
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.screen-data .data-table th {
+  color: var(--accent2);
+  background: var(--bg2);
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.screen-data .data-table td {
+  color: var(--text);
+  font-size: 15px;
+}
+
+#naserver-auth-modal .modal-box {
+  width: min(420px, calc(100vw - 32px));
+  padding: 24px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.34);
+}
+
+#naserver-auth-modal .modal-title {
+  color: var(--accent2);
+  font-size: 20px;
+  font-weight: 700;
+  text-transform: none;
+}
+
+#naserver-auth-modal .firebase-config-group {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+#naserver-auth-modal label {
+  color: var(--text-dim);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.naserver-backup-overlay {
+  background: rgba(10, 10, 18, 0.78);
+  backdrop-filter: blur(8px);
+}
+
+.naserver-backup-panel {
+  width: min(460px, calc(100vw - 32px));
+  padding: 24px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.34);
+  text-align: left;
+}
+
+.naserver-backup-label {
+  margin-bottom: 16px;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.naserver-backup-track {
+  height: 10px;
+  overflow: hidden;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.naserver-backup-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent4), var(--accent2));
+}
+
+.naserver-backup-percent {
+  margin-top: 10px;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: right;
+}
+
+@media (max-width: 760px) {
+  .screen-data .data-dashboard-panel {
+    width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px);
+    padding: 14px;
+  }
+
+  .dashboard-header,
+  .dashboard-card-header,
+  .dashboard-control-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .screen-data #question-set-selector,
+  .screen-data #storage-provider-mode,
+  .screen-data .action-btn,
+  .screen-data .toggle-config-btn,
+  .screen-data .back-btn {
+    width: 100%;
+    max-width: none;
+  }
+
+  .screen-data .firebase-config-group {
+    grid-template-columns: 1fr;
+  }
+
+  .screen-data .panel-title {
+    font-size: 22px;
+  }
+}
+
 @media (min-width: 1024px) {
   .menu-btn-container { width: 104%; padding-left: 2%; }
   .back-btn { font-size: 12px; padding: 15px; }
@@ -1276,7 +2133,77 @@
   .screen-data .form-group label { font-size: 15px; }
   .screen-data .form-group input { font-size: 18px; padding: 15px; }
   .screen-data .import-input { font-size: 18px; padding: 15px; }
-  .screen-data #question-set-selector { font-size: 15px; padding: 12px; }
+.screen-data #question-set-selector { font-size: 15px; padding: 12px; }
+
+.screen-data #storage-provider-mode {
+  font-size: 15px;
+  padding: 12px;
+}
+
+.server-account-panel,
+#naserver-sync-actions,
+.firebase-config-panel > .form-group + .form-group,
+.firebase-config-panel > .btn-row {
+  margin-top: 14px;
+}
+
+.menu-btn.is-disabled,
+.menu-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.naserver-backup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(8px);
+}
+
+.naserver-backup-panel {
+  width: min(460px, calc(100vw - 32px));
+  border: 1px solid var(--dashboard-border);
+  border-radius: 8px;
+  padding: 24px;
+  background: #fff;
+  color: var(--dashboard-text);
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.24);
+  text-align: left;
+}
+
+.naserver-backup-label {
+  margin-bottom: 16px;
+  color: var(--dashboard-text);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.naserver-backup-track {
+  height: 10px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.naserver-backup-fill {
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb, #14b8a6);
+  transition: width 0.2s ease;
+}
+
+.naserver-backup-percent {
+  margin-top: 10px;
+  color: var(--dashboard-muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: right;
+}
   .screen-data .data-table th,
   .screen-data .data-table td { font-size: 16.5px; padding: 18px 15px; }
   .screen-data .page-btn,
@@ -1290,4 +2217,117 @@
   .screen-settings .toggle-input:checked + .toggle-slider::before { transform: translateX(30px); }
   .screen-settings .weight-slider::-webkit-slider-thumb { width: 24px; height: 24px; }
   .screen-stats .panel { max-width: 1080px; }
+}
+
+/* ─── Final dashboard overrides ─────────────────── */
+.screen-data .data-dashboard-panel {
+  width: min(1180px, calc(100vw - 32px));
+  max-width: 1180px;
+  padding: 24px;
+  gap: 16px;
+  background: var(--dashboard-bg);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 8px;
+}
+
+.screen-data .panel-title {
+  color: var(--dashboard-text);
+  font-size: 28px;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.screen-data .action-btn,
+.screen-data .toggle-config-btn,
+.screen-data .back-btn {
+  min-height: 40px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: none;
+  border-radius: 6px;
+}
+
+.screen-data #question-set-selector,
+.screen-data #storage-provider-mode,
+.screen-data .form-group input,
+.screen-data .import-input {
+  min-height: 42px;
+  padding: 0 12px;
+  font-size: 14px;
+  border-radius: 6px;
+}
+
+.screen-data #question-set-selector,
+.screen-data #storage-provider-mode {
+  width: auto;
+  min-width: 240px;
+  max-width: 360px;
+  padding-right: 36px;
+}
+
+.screen-data .data-table th,
+.screen-data .data-table td {
+  padding: 12px 14px;
+  font-size: 14px;
+}
+
+@media (max-width: 760px) {
+  .screen-data .data-dashboard-panel {
+    width: calc(100vw - 16px);
+    padding: 14px;
+  }
+
+  .screen-data #question-set-selector,
+  .screen-data #storage-provider-mode,
+  .screen-data .action-btn,
+  .screen-data .toggle-config-btn,
+  .screen-data .back-btn {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.naserver-backup-overlay {
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(8px);
+}
+
+.naserver-backup-panel {
+  width: min(460px, calc(100vw - 32px));
+  padding: 24px;
+  background: #fff;
+  color: var(--dashboard-text);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 8px;
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.24);
+  text-align: left;
+}
+
+.naserver-backup-label {
+  margin-bottom: 16px;
+  color: var(--dashboard-text);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.naserver-backup-track {
+  height: 10px;
+  overflow: hidden;
+  background: #e2e8f0;
+  border: 0;
+  border-radius: 999px;
+}
+
+.naserver-backup-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb, #14b8a6);
+}
+
+.naserver-backup-percent {
+  margin-top: 10px;
+  color: var(--dashboard-muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: right;
 }

@@ -9,6 +9,11 @@ const DATA_PAGE_SIZE = 4;
 
 /* ── IMPORT MODAL ── */
 function openImportModal(index = null) {
+  const activeSet = getActiveQuestionSet();
+  if (activeSet?.serverOnly && !activeSet.canEdit) {
+    showToast('You only have view permission for this set', 'err');
+    return;
+  }
   const modal = document.getElementById('import-modal');
   const textarea = document.getElementById('import-textarea');
   const title = document.getElementById('import-modal-title');
@@ -440,6 +445,11 @@ function refreshDataPreview() {
 }
 
 function deleteQuestion(index) {
+  const activeSet = getActiveQuestionSet();
+  if (activeSet?.serverOnly && !activeSet.canEdit) {
+    showToast('You only have view permission for this set', 'err');
+    return;
+  }
   if (index < 0 || index >= questions.length) return;
   if (!confirm('Are you sure you want to delete this question?')) return;
   questions.splice(index, 1);
@@ -498,6 +508,7 @@ async function saveFirebaseConfig() {
   };
   
   localStorage.setItem('jq_firebase_config', JSON.stringify(config));
+  localStorage.removeItem('jq_naserver_config');
   if (typeof setProviderMode === 'function') setProviderMode('firebase');
 
   try {
@@ -585,6 +596,11 @@ function updateCopyButtonState() {
 }
 
 async function backupQuestionSet() {
+  if (typeof isNAServerConfigured === 'function' && isNAServerConfigured()) {
+    await backupActiveSetToNAServer();
+    return;
+  }
+
   const config = loadFirebaseConfig();
   if (!config || !config.projectId) {
     showToast('❌ Please configure Firebase first', 'err');

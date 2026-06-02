@@ -332,6 +332,21 @@ function handleEmptyGameDeck(gameType) {
 }
 
 function updateQuestionStats(questionIdOrIndex, gameType, isCorrect, responseTime) {
+  if (typeof isNAServerConfigured === 'function' && isNAServerConfigured()) {
+    let serverQuestionId;
+    if (typeof questionIdOrIndex === 'string') {
+      serverQuestionId = questionIdOrIndex.includes('::') ? questionIdOrIndex.split('::').pop() : questionIdOrIndex;
+    } else {
+      const q = questions[questionIdOrIndex];
+      serverQuestionId = q?.id || generateQuestionId(q || { word: '', q: '', romaji: '' });
+    }
+    if (typeof recordAttemptOnNAServer === 'function') {
+      recordAttemptOnNAServer(serverQuestionId, gameType, isCorrect, responseTime)
+        .catch(error => showToast(`NAServer stats failed: ${error.message}`, 'err'));
+    }
+    return;
+  }
+
   let id;
   if (typeof questionIdOrIndex === 'string') {
     id = getScopedQuestionId(questionIdOrIndex);

@@ -18,7 +18,8 @@
   <link rel="stylesheet" href="css/game-hud.css">
   <link rel="stylesheet" href="css/game-overlays.css">
   <link rel="stylesheet" href="css/modals.css">
-  <link rel="stylesheet" href="css/extra.css">
+  <link rel="stylesheet" href="css/extra.css?v=settings-data-20260602">
+  <link rel="stylesheet" href="css/data-management-settings.css?v=20260602">
   <link rel="icon" href="images/icon.jpg" type="image/jpeg">
 </head>
 <body>
@@ -118,33 +119,41 @@
 
   <!-- DATA MANAGEMENT -->
   <div id="screen-data" class="screen screen-data">
-    <div class="panel">
-      <h2 class="panel-title">📦 DATA MANAGEMENT</h2>
-      <div class="form-group">
-        <label>Question set</label>
-        <div class="btn-row">
-          <select id="question-set-selector" onchange="switchQuestionSet(this.value)"></select>
-          <button class="action-btn btn-secondary" onclick="promptCreateQuestionSet()">+ NEW</button>
-          <button class="action-btn btn-secondary" onclick="promptRenameQuestionSet()">✏️ RENAME</button>
-          <button class="action-btn btn-danger" onclick="deleteActiveQuestionSet()">🗑 DELETE</button>
-          <button class="action-btn" id="btn-backup" onclick="backupQuestionSet()">☁️ BACKUP</button>
-          <button class="action-btn btn-secondary hidden" id="btn-firebase-sets" onclick="showFirebaseSetsModal()">📂 FIREBASE SETS</button>
+    <div class="panel data-dashboard-panel">
+      <div class="dashboard-header">
+        <div>
+          <h2 class="panel-title">Data Management</h2>
+          <p class="dashboard-subtitle">Manage question sets, server sync, imports, and exports.</p>
         </div>
+        <button class="back-btn dashboard-back" onclick="showScreen('screen-menu')">Back to menu</button>
       </div>
-      <div class="form-group">
-        <label>Active set: <span id="active-set-name">Default Set</span></label>
-      </div>
-      <div class="form-group">
-        <label>Press IMPORT to paste question JSON in the modal.</label>
-      </div>
-      <div class="btn-row">
-        <button class="action-btn" onclick="openImportModal()">✅ IMPORT</button>
-        <button class="action-btn btn-danger" onclick="clearData()">🗑 CLEAR SET</button>
-        <button class="action-btn btn-secondary" onclick="loadSampleData()">📚 SAMPLE DATA</button>
-        <button class="action-btn btn-secondary" onclick="exportData()">📤 EXPORT</button>
-      </div>
-      <div class="firebase-config-section hidden" data-provider-section="firebase">
-        <button type="button" class="toggle-config-btn" onclick="toggleFirebaseConfig()">🔧 FIREBASE CONFIG</button>
+
+      <section class="dashboard-card">
+        <div class="dashboard-card-header">
+          <div>
+            <h3>Question Set</h3>
+            <p>Active set: <span id="active-set-name">Default Set</span></p>
+          </div>
+        </div>
+        <div class="dashboard-control-row">
+          <select id="question-set-selector" onchange="switchQuestionSet(this.value)"></select>
+          <button class="action-btn btn-secondary" onclick="promptCreateQuestionSet()">New</button>
+          <button class="action-btn btn-secondary" id="btn-rename-set" onclick="promptRenameQuestionSet()">Rename</button>
+          <button class="action-btn btn-danger" id="btn-delete-set" onclick="deleteActiveQuestionSet()">Delete</button>
+          <button class="action-btn btn-secondary" id="btn-share-set" onclick="promptShareQuestionSet()">Share</button>
+          <button class="action-btn" id="btn-backup" onclick="backupQuestionSet()">Backup</button>
+          <button class="action-btn btn-secondary hidden" id="btn-firebase-sets" onclick="showFirebaseSetsModal()">Firebase sets</button>
+        </div>
+      </section>
+
+      <section class="dashboard-card hidden" data-provider-section="firebase">
+        <div class="dashboard-card-header">
+          <div>
+            <h3>Custom Firebase</h3>
+            <p>Use your own Firebase project instead of NAServer.</p>
+          </div>
+          <button type="button" class="toggle-config-btn" onclick="toggleFirebaseConfig()">Firebase config</button>
+        </div>
         <div id="firebase-config-panel" class="firebase-config-panel hidden">
           <div class="firebase-config-group">
             <div class="form-group">
@@ -181,13 +190,20 @@
             <input id="firebase-measurement-id" type="text" placeholder="G-XXXXXXXXXX" />
           </div>
           <div class="btn-row">
-            <button class="action-btn" onclick="saveFirebaseConfig()">💾 SAVE CONFIG</button>
-            <button class="action-btn btn-secondary" onclick="testFirebaseConnection()">🧪 TEST</button>
+            <button class="action-btn" onclick="saveFirebaseConfig()">Save config</button>
+            <button class="action-btn btn-secondary" onclick="testFirebaseConnection()">Test</button>
           </div>
         </div>
-      </div>
-      <div class="firebase-config-section">
-        <button type="button" class="toggle-config-btn" onclick="hydrateNAServerConfigUI()">SERVER SYNC</button>
+      </section>
+
+      <section class="dashboard-card">
+        <div class="dashboard-card-header">
+          <div>
+            <h3>Server Sync</h3>
+            <p id="naserver-account-status">Not logged in</p>
+          </div>
+          <button type="button" class="toggle-config-btn" onclick="hydrateNAServerConfigUI()">Refresh</button>
+        </div>
         <div class="firebase-config-panel">
           <div class="form-group">
             <label for="storage-provider-mode">Storage Server</label>
@@ -197,21 +213,34 @@
             </select>
           </div>
           <div id="naserver-auth-panel" class="server-account-panel">
-            <div id="naserver-account-status" class="form-hint">Not logged in</div>
             <div class="btn-row">
-              <button class="action-btn" id="btn-naserver-login-open" onclick="openNAServerAuthModal('login')">🔐 LOGIN</button>
-              <button class="action-btn btn-secondary" id="btn-naserver-register-open" onclick="openNAServerAuthModal('register')">📝 REGISTER</button>
-              <button class="action-btn btn-secondary hidden" id="btn-naserver-logout" onclick="logoutNAServerAccount()">🚪 LOGOUT</button>
+              <button class="action-btn" id="btn-naserver-login-open" onclick="openNAServerAuthModal('login')">Login</button>
+              <button class="action-btn btn-secondary" id="btn-naserver-register-open" onclick="openNAServerAuthModal('register')">Register</button>
+              <button class="action-btn btn-secondary hidden" id="btn-naserver-logout" onclick="logoutNAServerAccount()">Logout</button>
             </div>
           </div>
           <div class="btn-row hidden" id="naserver-sync-actions">
-            <button class="action-btn btn-secondary" onclick="pullActiveSetFromNAServer()">⬇️ PULL ACTIVE</button>
-            <button class="action-btn btn-secondary" onclick="pushActiveSetToNAServer()">⬆️ PUSH ACTIVE</button>
+            <button class="action-btn btn-secondary" onclick="pullActiveSetFromNAServer()">Pull active</button>
+            <button class="action-btn btn-secondary" onclick="pushActiveSetToNAServer()">Push active</button>
           </div>
         </div>
-      </div>
-      <div class="import-section">
-        <label>☁️ IMPORT</label>
+      </section>
+
+      <section class="dashboard-card">
+        <div class="dashboard-card-header">
+          <div>
+            <h3>Import / Export</h3>
+            <p>Paste JSON in the import modal or load data from a URL/ID.</p>
+          </div>
+        </div>
+        <div class="dashboard-control-row">
+          <button class="action-btn" onclick="openImportModal()">Import JSON</button>
+          <button class="action-btn btn-danger" onclick="clearData()">Clear set</button>
+          <button class="action-btn btn-secondary" onclick="loadSampleData()">Sample data</button>
+          <button class="action-btn btn-secondary" onclick="exportData()">Export</button>
+        </div>
+        <div class="import-section">
+        <label>Remote import</label>
         <div class="import-toggle">
           <input type="radio" id="import-url" name="import-mode" value="url" checked onchange="toggleImportMode()" />
           <label for="import-url">URL</label>
@@ -222,24 +251,24 @@
           <input id="import-url-input" type="text" class="import-input" placeholder="Paste JSON URL here..." />
           <button class="action-btn" onclick="handleGetButton()">GET</button>
         </div>
-      </div>
+        </div>
       <div id="data-status" class="status-msg"></div>
       <div class="form-group">
         <label for="question-search">Search questions</label>
         <input id="question-search" type="text" placeholder="Search by word, question, romaji, or translation" oninput="updateQuestionSearch()" />
       </div>
+      </section>
       <div class="current-data">
         <h3>Current items: <span id="current-count">0</span></h3>
         <div id="question-list" class="question-list"></div>
       </div>
-      <button class="back-btn" onclick="showScreen('screen-menu')">◀ BACK TO MENU</button>
     </div>
   </div>
 
   <!-- IMPORT MODAL -->
   <div id="import-modal" class="modal-overlay hidden" onclick="if (event.target === this) closeImportModal()">
     <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="import-modal-title">
-      <h3 id="import-modal-title" class="modal-title">📥 IMPORT DATA</h3>
+      <h3 id="import-modal-title" class="modal-title">Import data</h3>
       <textarea id="import-textarea" class="modal-textarea" placeholder='[{"word":"学生","q":"What's the reading?","a":["がくせい","がくぜい","がっせい","かくせい"],"c":0,"romaji":"gakusei","translation":"Student","ex":"Student"}]'></textarea>
       <div class="modal-buttons">
         <button class="action-btn btn-secondary" onclick="closeImportModal()">Cancel</button>
@@ -253,7 +282,7 @@
   <!-- FIREBASE SETS MODAL -->
   <div id="firebase-sets-modal" class="modal-overlay hidden" onclick="if (event.target === this) closeFirebaseSetsModal()">
     <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="firebase-sets-modal-title">
-      <h3 id="firebase-sets-modal-title" class="modal-title">☁️ FIREBASE SETS</h3>
+      <h3 id="firebase-sets-modal-title" class="modal-title">Firebase sets</h3>
       <div id="firebase-sets-list" class="firebase-sets-list"></div>
       <div class="modal-buttons">
         <button class="action-btn btn-secondary" onclick="closeFirebaseSetsModal()">Close</button>
@@ -264,7 +293,7 @@
   <!-- NASERVER AUTH MODAL -->
   <div id="naserver-auth-modal" class="modal-overlay hidden" onclick="if (event.target === this) closeNAServerAuthModal()">
     <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="naserver-auth-modal-title">
-      <h3 id="naserver-auth-modal-title" class="modal-title">🔐 NASERVER LOGIN</h3>
+      <h3 id="naserver-auth-modal-title" class="modal-title">NAServer login</h3>
       <div class="firebase-config-group">
         <div class="form-group">
           <label for="naserver-email">Email</label>
@@ -277,7 +306,7 @@
       </div>
       <div class="modal-buttons">
         <button class="action-btn btn-secondary" onclick="closeNAServerAuthModal()">Cancel</button>
-        <button class="action-btn" id="naserver-auth-submit" onclick="submitNAServerAuthModal()">🔐 Login</button>
+        <button class="action-btn" id="naserver-auth-submit" onclick="submitNAServerAuthModal()">Login</button>
       </div>
     </div>
   </div>
@@ -787,6 +816,16 @@
 
   <!-- TOAST NOTIFICATION -->
   <div id="toast" class="toast hidden"></div>
+
+  <div id="naserver-backup-overlay" class="naserver-backup-overlay hidden">
+    <div class="naserver-backup-panel">
+      <div id="naserver-backup-label" class="naserver-backup-label">Syncing with NAServer...</div>
+      <div class="naserver-backup-track">
+        <div id="naserver-backup-fill" class="naserver-backup-fill"></div>
+      </div>
+      <div id="naserver-backup-percent" class="naserver-backup-percent">0%</div>
+    </div>
+  </div>
 
   <!-- Firebase SDK is loaded only when NAServer mode is not active. -->
   <script>
