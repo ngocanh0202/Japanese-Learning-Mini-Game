@@ -1,13 +1,35 @@
 // Optional NAServer sync. Local storage remains the source of truth unless configured.
 const NASERVER_CONFIG_KEY = 'jq_naserver_config';
+const NASERVER_DEFAULT_BASE_URL = 'http://127.0.0.1:8000';
+
+function normalizeNAServerConfig(config = {}) {
+  const provider = config.provider === 'firebase' ? 'firebase' : 'naserver';
+  return {
+    provider,
+    baseUrl: (config.baseUrl || NASERVER_DEFAULT_BASE_URL).trim(),
+    token: (config.token || '').trim(),
+    email: (config.email || '').trim()
+  };
+}
 
 function loadNAServerConfig() {
   try {
     const raw = localStorage.getItem(NASERVER_CONFIG_KEY);
-    return raw ? JSON.parse(raw) : { baseUrl: '', token: '' };
+    return normalizeNAServerConfig(raw ? JSON.parse(raw) : {});
   } catch (_) {
-    return { baseUrl: '', token: '' };
+    return normalizeNAServerConfig();
   }
+}
+
+function saveNAServerConfig(config) {
+  const normalized = normalizeNAServerConfig(config);
+  localStorage.setItem(NASERVER_CONFIG_KEY, JSON.stringify(normalized));
+  if (normalized.provider === 'naserver' && normalized.token) {
+    localStorage.removeItem('jq_firebase_config');
+    if (typeof showFirebaseSetsButton === 'function') showFirebaseSetsButton(false);
+  }
+  hydrateNAServerConfigUI();
+  return normalized;
 }
 
 function getNAServerBaseUrl(config = loadNAServerConfig()) {
@@ -15,7 +37,18 @@ function getNAServerBaseUrl(config = loadNAServerConfig()) {
 }
 
 function isNAServerConfigured(config = loadNAServerConfig()) {
-  return !!(getNAServerBaseUrl(config) && config.token);
+  return config.provider !== 'firebase' && !!(getNAServerBaseUrl(config) && config.token);
+}
+
+function isFirebaseProviderMode(config = loadNAServerConfig()) {
+  return config.provider === 'firebase';
+}
+
+function setProviderMode(provider) {
+  const current = loadNAServerConfig();
+  const next = saveNAServerConfig({ ...current, provider: provider === 'firebase' ? 'firebase' : 'naserver' });
+  updateProviderModeUI(next);
+  return next;
 }
 
 function getNAServerHeaders(config = loadNAServerConfig()) {
@@ -27,8 +60,8 @@ function getNAServerHeaders(config = loadNAServerConfig()) {
 async function requestNAServer(path, options = {}) {
   const config = loadNAServerConfig();
   const baseUrl = getNAServerBaseUrl(config);
-  if (!baseUrl || !config.token) {
-    throw new Error('NAServer base URL and token are required');
+  if (config.provider === 'firebase' || !baseUrl || !config.token) {
+    throw new Error('Please login to NAServer first');
   }
 
   const response = await fetch(`${baseUrl}${path}`, {
@@ -45,25 +78,111 @@ async function requestNAServer(path, options = {}) {
 
 function hydrateNAServerConfigUI() {
   const config = loadNAServerConfig();
-  const baseInput = document.getElementById('naserver-base-url');
-  const tokenInput = document.getElementById('naserver-token');
-  if (baseInput) baseInput.value = config.baseUrl || '';
-  if (tokenInput) tokenInput.value = config.token || '';
+  const providerSelect = document.getElementById('storage-provider-mode');
+  const emailInput = document.getElementById('naserver-email');
+  const passwordInput = document.getElementById('naserver-password');
+  const status = document.getElementById('naserver-account-status');
+  if (providerSelect) providerSelect.value = config.provider;
+  if (emailInput) emailInput.value = config.email || '';
+  if (passwordInput) passwordInput.value = '';
+  if (status) {
+    status.textContent = config.token ? `Logged in as ${config.email || 'NAServer user'}` : 'Not logged in';
+  }
+  updateProviderModeUI(config);
 }
 
 function saveNAServerConfigFromUI() {
-  const baseInput = document.getElementById('naserver-base-url');
-  const tokenInput = document.getElementById('naserver-token');
-  const config = {
-    baseUrl: baseInput ? baseInput.value.trim() : '',
-    token: tokenInput ? tokenInput.value.trim() : ''
-  };
-  localStorage.setItem(NASERVER_CONFIG_KEY, JSON.stringify(config));
-  if (isNAServerConfigured(config)) {
-    localStorage.removeItem('jq_firebase_config');
-    showFirebaseSetsButton(false);
+  const providerSelect = document.getElementById('storage-provider-mode');
+  setProviderMode(providerSelect ? providerSelect.value : 'naserver');
+  showToast('Server mode saved', 'ok');
+}
+
+function updateProviderModeUI(config = loadNAServerConfig()) {
+  const firebaseSections = document.querySelectorAll ? document.querySelectorAll('[data-provider-section="firebase"]') : [];
+  const naserverPanel = document.getElementById('naserver-auth-panel');
+  const showFirebase = config.provider === 'firebase';
+  firebaseSections.forEach(section => setHidden(section, !showFirebase));
+  if (naserverPanel) setHidden(naserverPanel, showFirebase);
+  if (typeof showFirebaseSetsButton === 'function') {
+    showFirebaseSetsButton(showFirebase && !!localStorage.getItem('jq_firebase_config'));
   }
-  showToast('NAServer config saved', 'ok');
+}
+
+function setHidden(element, hidden) {
+  if (!element || !element.classList) return;
+  if (typeof element.classList.toggle === 'function') {
+    element.classList.toggle('hidden', hidden);
+  } else if (hidden && typeof element.classList.add === 'function') {
+    element.classList.add('hidden');
+  } else if (!hidden && typeof element.classList.remove === 'function') {
+    element.classList.remove('hidden');
+  }
+}
+
+async function authNAServerAccount(path, email, password) {
+  const current = loadNAServerConfig();
+  const baseUrl = getNAServerBaseUrl(current);
+  const response = await fetch(`${baseUrl}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.detail || `NAServer auth failed with status ${response.status}`);
+  }
+  return payload;
+}
+
+async function loginNAServerAccount(email, password) {
+  const payload = await authNAServerAccount('/api/japanese-learning-game/auth/login', email, password);
+  saveNAServerConfig({
+    ...loadNAServerConfig(),
+    provider: 'naserver',
+    token: payload.access_token || '',
+    email
+  });
+  showToast('Logged in to NAServer', 'ok');
+  return payload;
+}
+
+async function registerNAServerAccount(email, password) {
+  const payload = await authNAServerAccount('/api/japanese-learning-game/auth/register', email, password);
+  showToast(`Registered ${payload.email || email}. Status: ${payload.approval_status || 'pending'}`, 'ok');
+  return payload;
+}
+
+function logoutNAServerAccount() {
+  saveNAServerConfig({ ...loadNAServerConfig(), token: '', email: '', provider: 'naserver' });
+  showToast('Logged out from NAServer', 'ok');
+}
+
+async function loginNAServerFromUI() {
+  const email = document.getElementById('naserver-email')?.value.trim();
+  const password = document.getElementById('naserver-password')?.value;
+  if (!email || !password) {
+    showToast('Email and password are required', 'err');
+    return;
+  }
+  try {
+    await loginNAServerAccount(email, password);
+  } catch (error) {
+    showToast(`NAServer login failed: ${error.message}`, 'err');
+  }
+}
+
+async function registerNAServerFromUI() {
+  const email = document.getElementById('naserver-email')?.value.trim();
+  const password = document.getElementById('naserver-password')?.value;
+  if (!email || !password) {
+    showToast('Email and password are required', 'err');
+    return;
+  }
+  try {
+    await registerNAServerAccount(email, password);
+  } catch (error) {
+    showToast(`NAServer registration failed: ${error.message}`, 'err');
+  }
 }
 
 async function pullActiveSetFromNAServer() {

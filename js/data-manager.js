@@ -58,6 +58,10 @@ function closeFirebaseSetsModal() {
 }
 
 async function showFirebaseSetsModal() {
+  if (typeof isFirebaseProviderMode === 'function' && !isFirebaseProviderMode()) {
+    showToast('Switch storage server to Custom Firebase first', 'err');
+    return;
+  }
   const config = loadFirebaseConfig();
   if (!config || !config.projectId) {
     showToast('❌ Please configure Firebase first', 'err');
@@ -494,7 +498,7 @@ async function saveFirebaseConfig() {
   };
   
   localStorage.setItem('jq_firebase_config', JSON.stringify(config));
-  localStorage.removeItem('jq_naserver_config');
+  if (typeof setProviderMode === 'function') setProviderMode('firebase');
 
   try {
     const sdkLoaded = await ensureFirebaseSdkLoaded();
@@ -517,7 +521,8 @@ async function saveFirebaseConfig() {
 function showFirebaseSetsButton(show) {
   const btn = document.getElementById('btn-firebase-sets');
   if (btn) {
-    if (show) {
+    const firebaseMode = typeof isFirebaseProviderMode === 'function' && isFirebaseProviderMode();
+    if (show && firebaseMode) {
       btn.classList.remove('hidden');
     } else {
       btn.classList.add('hidden');

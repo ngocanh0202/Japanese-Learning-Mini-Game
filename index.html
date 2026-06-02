@@ -143,7 +143,7 @@
         <button class="action-btn btn-secondary" onclick="loadSampleData()">📚 SAMPLE DATA</button>
         <button class="action-btn btn-secondary" onclick="exportData()">📤 EXPORT</button>
       </div>
-      <div class="firebase-config-section">
+      <div class="firebase-config-section hidden" data-provider-section="firebase">
         <button type="button" class="toggle-config-btn" onclick="toggleFirebaseConfig()">🔧 FIREBASE CONFIG</button>
         <div id="firebase-config-panel" class="firebase-config-panel hidden">
           <div class="firebase-config-group">
@@ -187,20 +187,34 @@
         </div>
       </div>
       <div class="firebase-config-section">
-        <button type="button" class="toggle-config-btn" onclick="hydrateNAServerConfigUI()">NASERVER SYNC</button>
+        <button type="button" class="toggle-config-btn" onclick="hydrateNAServerConfigUI()">SERVER SYNC</button>
         <div class="firebase-config-panel">
-          <div class="firebase-config-group">
-            <div class="form-group">
-              <label for="naserver-base-url">API Base URL</label>
-              <input id="naserver-base-url" type="text" placeholder="http://localhost:8000" />
+          <div class="form-group">
+            <label for="storage-provider-mode">Storage Server</label>
+            <select id="storage-provider-mode" onchange="setProviderMode(this.value)">
+              <option value="naserver">NAServer</option>
+              <option value="firebase">Custom Firebase</option>
+            </select>
+          </div>
+          <div id="naserver-auth-panel">
+            <div id="naserver-account-status" class="form-hint">Not logged in</div>
+            <div class="firebase-config-group">
+              <div class="form-group">
+                <label for="naserver-email">Email</label>
+                <input id="naserver-email" type="email" placeholder="you@example.com" />
+              </div>
+              <div class="form-group">
+                <label for="naserver-password">Password</label>
+                <input id="naserver-password" type="password" placeholder="Password" />
+              </div>
             </div>
-            <div class="form-group">
-              <label for="naserver-token">Access Token</label>
-              <input id="naserver-token" type="password" placeholder="Bearer token from /api/japanese-learning-game/auth/login" />
+            <div class="btn-row">
+              <button class="action-btn" onclick="loginNAServerFromUI()">LOGIN</button>
+              <button class="action-btn btn-secondary" onclick="registerNAServerFromUI()">REGISTER</button>
+              <button class="action-btn btn-secondary" onclick="logoutNAServerAccount()">LOGOUT</button>
             </div>
           </div>
           <div class="btn-row">
-            <button class="action-btn" onclick="saveNAServerConfigFromUI()">SAVE API</button>
             <button class="action-btn btn-secondary" onclick="pullActiveSetFromNAServer()">PULL ACTIVE</button>
             <button class="action-btn btn-secondary" onclick="pushActiveSetToNAServer()">PUSH ACTIVE</button>
           </div>

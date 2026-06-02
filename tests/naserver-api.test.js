@@ -5,10 +5,7 @@ const vm = require('vm');
 
 const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'naserver-api.js'), 'utf8');
 
-let storedConfig = JSON.stringify({
-  baseUrl: 'http://api.test/',
-  token: 'abc'
-});
+let storedConfig = null;
 let storedFirebaseConfig = JSON.stringify({ projectId: 'firebase-project' });
 const calls = [];
 
@@ -31,8 +28,12 @@ const context = {
   },
   document: {
     getElementById(id) {
-      if (id === 'naserver-base-url') return { value: 'http://api.saved/' };
-      if (id === 'naserver-token') return { value: 'saved-token' };
+      if (id === 'storage-provider-mode') return { value: 'naserver' };
+      if (id === 'naserver-email') return { value: 'saved@example.com', textContent: '', classList: { add() {}, remove() {} } };
+      if (id === 'naserver-password') return { value: 'saved-password', textContent: '', classList: { add() {}, remove() {} } };
+      if (id === 'naserver-account-status') return { textContent: '', classList: { add() {}, remove() {} } };
+      if (id === 'naserver-auth-panel') return { classList: { add() {}, remove() {} } };
+      if (id === 'firebase-config-panel') return { classList: { add() {}, remove() {} } };
       return null;
     }
   },
@@ -44,6 +45,18 @@ const context = {
   },
   fetch: async (url, options) => {
     calls.push({ url, options });
+    if (url.endsWith('/api/japanese-learning-game/auth/login')) {
+      return {
+        ok: true,
+        json: async () => ({ access_token: 'token-123', refresh_token: 'refresh-123' })
+      };
+    }
+    if (url.endsWith('/api/japanese-learning-game/auth/register')) {
+      return {
+        ok: true,
+        json: async () => ({ email: 'new@example.com', approval_status: 'pending' })
+      };
+    }
     return {
       ok: true,
       json: async () => ({ id: 'set1', name: 'Server Set', questions: [] })
@@ -56,17 +69,31 @@ vm.runInContext(source, context);
 
 (async () => {
   const config = vm.runInContext('loadNAServerConfig()', context);
-  assert.strictEqual(config.baseUrl, 'http://api.test/');
-  assert.strictEqual(vm.runInContext('getNAServerBaseUrl()', context), 'http://api.test');
+  assert.strictEqual(config.provider, 'naserver');
+  assert.strictEqual(config.baseUrl, 'http://127.0.0.1:8000');
+  assert.strictEqual(config.token, '');
+  assert.strictEqual(vm.runInContext('isNAServerConfigured()', context), false);
+
+  await vm.runInContext("loginNAServerAccount('user@example.com', 'secret')", context);
+  assert.strictEqual(calls[0].url, 'http://127.0.0.1:8000/api/japanese-learning-game/auth/login');
+  assert.deepStrictEqual(JSON.parse(calls[0].options.body), { email: 'user@example.com', password: 'secret' });
+  assert.strictEqual(JSON.parse(storedConfig).token, 'token-123');
+  assert.strictEqual(JSON.parse(storedConfig).email, 'user@example.com');
+  assert.strictEqual(storedFirebaseConfig, null);
+  assert.strictEqual(vm.runInContext('isNAServerConfigured()', context), true);
 
   await vm.runInContext("requestNAServer('/api/japanese-learning-game/active-set')", context);
-  assert.strictEqual(calls[0].url, 'http://api.test/api/japanese-learning-game/active-set');
-  assert.strictEqual(calls[0].options.headers.Authorization, 'Bearer abc');
+  const fetchCalls = calls.filter(call => call.url);
+  assert.strictEqual(fetchCalls[1].url, 'http://127.0.0.1:8000/api/japanese-learning-game/active-set');
+  assert.strictEqual(fetchCalls[1].options.headers.Authorization, 'Bearer token-123');
 
-  vm.runInContext('saveNAServerConfigFromUI()', context);
-  assert.strictEqual(storedFirebaseConfig, null);
-  assert.strictEqual(JSON.parse(storedConfig).baseUrl, 'http://api.saved/');
-  assert.strictEqual(JSON.parse(storedConfig).token, 'saved-token');
+  await vm.runInContext("registerNAServerAccount('new@example.com', 'secret')", context);
+  assert.strictEqual(fetchCalls.length, 2);
+  assert.strictEqual(calls.filter(call => call.url)[2].url, 'http://127.0.0.1:8000/api/japanese-learning-game/auth/register');
+
+  vm.runInContext("setProviderMode('firebase')", context);
+  assert.strictEqual(vm.runInContext('isFirebaseProviderMode()', context), true);
+  assert.strictEqual(vm.runInContext('isNAServerConfigured()', context), false);
   assert.deepStrictEqual(calls.find(call => call.type === 'firebaseButton'), {
     type: 'firebaseButton',
     show: false

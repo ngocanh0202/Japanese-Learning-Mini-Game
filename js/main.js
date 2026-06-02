@@ -57,17 +57,19 @@ document.addEventListener('DOMContentLoaded', () => {
   updateAnimationBodyClass();
   
   const naserverConfig = typeof loadNAServerConfig === 'function' ? loadNAServerConfig() : null;
+  const firebaseMode = typeof isFirebaseProviderMode === 'function' && isFirebaseProviderMode(naserverConfig);
   const naserverConfigured = typeof isNAServerConfigured === 'function' && isNAServerConfigured(naserverConfig);
-  if (naserverConfigured) {
+  if (!firebaseMode) {
     localStorage.removeItem('jq_firebase_config');
   }
-  const firebaseConfig = naserverConfigured ? null : loadFirebaseConfig();
+  const firebaseConfig = firebaseMode ? loadFirebaseConfig() : null;
   if (firebaseConfig) {
     initializeFirebase(firebaseConfig);
     showFirebaseSetsButton(true);
   } else {
     showFirebaseSetsButton(false);
   }
+  if (typeof hydrateNAServerConfigUI === 'function') hydrateNAServerConfigUI();
   
   updateMenuUI();
   showScreen('screen-menu');
