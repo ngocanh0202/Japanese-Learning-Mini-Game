@@ -196,27 +196,17 @@
               <option value="firebase">Custom Firebase</option>
             </select>
           </div>
-          <div id="naserver-auth-panel">
+          <div id="naserver-auth-panel" class="server-account-panel">
             <div id="naserver-account-status" class="form-hint">Not logged in</div>
-            <div class="firebase-config-group">
-              <div class="form-group">
-                <label for="naserver-email">Email</label>
-                <input id="naserver-email" type="email" placeholder="you@example.com" />
-              </div>
-              <div class="form-group">
-                <label for="naserver-password">Password</label>
-                <input id="naserver-password" type="password" placeholder="Password" />
-              </div>
-            </div>
             <div class="btn-row">
-              <button class="action-btn" onclick="loginNAServerFromUI()">LOGIN</button>
-              <button class="action-btn btn-secondary" onclick="registerNAServerFromUI()">REGISTER</button>
-              <button class="action-btn btn-secondary" onclick="logoutNAServerAccount()">LOGOUT</button>
+              <button class="action-btn" id="btn-naserver-login-open" onclick="openNAServerAuthModal('login')">🔐 LOGIN</button>
+              <button class="action-btn btn-secondary" id="btn-naserver-register-open" onclick="openNAServerAuthModal('register')">📝 REGISTER</button>
+              <button class="action-btn btn-secondary hidden" id="btn-naserver-logout" onclick="logoutNAServerAccount()">🚪 LOGOUT</button>
             </div>
           </div>
-          <div class="btn-row">
-            <button class="action-btn btn-secondary" onclick="pullActiveSetFromNAServer()">PULL ACTIVE</button>
-            <button class="action-btn btn-secondary" onclick="pushActiveSetToNAServer()">PUSH ACTIVE</button>
+          <div class="btn-row hidden" id="naserver-sync-actions">
+            <button class="action-btn btn-secondary" onclick="pullActiveSetFromNAServer()">⬇️ PULL ACTIVE</button>
+            <button class="action-btn btn-secondary" onclick="pushActiveSetToNAServer()">⬆️ PUSH ACTIVE</button>
           </div>
         </div>
       </div>
@@ -267,6 +257,27 @@
       <div id="firebase-sets-list" class="firebase-sets-list"></div>
       <div class="modal-buttons">
         <button class="action-btn btn-secondary" onclick="closeFirebaseSetsModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NASERVER AUTH MODAL -->
+  <div id="naserver-auth-modal" class="modal-overlay hidden" onclick="if (event.target === this) closeNAServerAuthModal()">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="naserver-auth-modal-title">
+      <h3 id="naserver-auth-modal-title" class="modal-title">🔐 NASERVER LOGIN</h3>
+      <div class="firebase-config-group">
+        <div class="form-group">
+          <label for="naserver-email">Email</label>
+          <input id="naserver-email" type="email" placeholder="you@example.com" />
+        </div>
+        <div class="form-group">
+          <label for="naserver-password">Password</label>
+          <input id="naserver-password" type="password" placeholder="Password" />
+        </div>
+      </div>
+      <div class="modal-buttons">
+        <button class="action-btn btn-secondary" onclick="closeNAServerAuthModal()">Cancel</button>
+        <button class="action-btn" id="naserver-auth-submit" onclick="submitNAServerAuthModal()">🔐 Login</button>
       </div>
     </div>
   </div>

@@ -1,6 +1,7 @@
 // Optional NAServer sync. Local storage remains the source of truth unless configured.
 const NASERVER_CONFIG_KEY = 'jq_naserver_config';
 const NASERVER_DEFAULT_BASE_URL = 'http://127.0.0.1:8000';
+let naserverAuthMode = 'login';
 
 function normalizeNAServerConfig(config = {}) {
   const provider = config.provider === 'firebase' ? 'firebase' : 'naserver';
@@ -82,12 +83,20 @@ function hydrateNAServerConfigUI() {
   const emailInput = document.getElementById('naserver-email');
   const passwordInput = document.getElementById('naserver-password');
   const status = document.getElementById('naserver-account-status');
+  const loginOpenBtn = document.getElementById('btn-naserver-login-open');
+  const registerOpenBtn = document.getElementById('btn-naserver-register-open');
+  const logoutBtn = document.getElementById('btn-naserver-logout');
+  const syncActions = document.getElementById('naserver-sync-actions');
   if (providerSelect) providerSelect.value = config.provider;
   if (emailInput) emailInput.value = config.email || '';
   if (passwordInput) passwordInput.value = '';
   if (status) {
     status.textContent = config.token ? `Logged in as ${config.email || 'NAServer user'}` : 'Not logged in';
   }
+  setHidden(loginOpenBtn, !!config.token || config.provider === 'firebase');
+  setHidden(registerOpenBtn, !!config.token || config.provider === 'firebase');
+  setHidden(logoutBtn, !config.token || config.provider === 'firebase');
+  setHidden(syncActions, !isNAServerConfigured(config));
   updateProviderModeUI(config);
 }
 
@@ -100,9 +109,11 @@ function saveNAServerConfigFromUI() {
 function updateProviderModeUI(config = loadNAServerConfig()) {
   const firebaseSections = document.querySelectorAll ? document.querySelectorAll('[data-provider-section="firebase"]') : [];
   const naserverPanel = document.getElementById('naserver-auth-panel');
+  const syncActions = document.getElementById('naserver-sync-actions');
   const showFirebase = config.provider === 'firebase';
   firebaseSections.forEach(section => setHidden(section, !showFirebase));
   if (naserverPanel) setHidden(naserverPanel, showFirebase);
+  if (syncActions) setHidden(syncActions, !isNAServerConfigured(config));
   if (typeof showFirebaseSetsButton === 'function') {
     showFirebaseSetsButton(showFirebase && !!localStorage.getItem('jq_firebase_config'));
   }
@@ -157,6 +168,34 @@ function logoutNAServerAccount() {
   showToast('Logged out from NAServer', 'ok');
 }
 
+function openNAServerAuthModal(mode = 'login') {
+  naserverAuthMode = mode === 'register' ? 'register' : 'login';
+  const modal = document.getElementById('naserver-auth-modal');
+  const title = document.getElementById('naserver-auth-modal-title');
+  const submit = document.getElementById('naserver-auth-submit');
+  const config = loadNAServerConfig();
+  const emailInput = document.getElementById('naserver-email');
+  const passwordInput = document.getElementById('naserver-password');
+  if (emailInput) emailInput.value = config.email || '';
+  if (passwordInput) passwordInput.value = '';
+  if (title) title.textContent = naserverAuthMode === 'register' ? '📝 NASERVER REGISTER' : '🔐 NASERVER LOGIN';
+  if (submit) submit.textContent = naserverAuthMode === 'register' ? '📝 Register' : '🔐 Login';
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeNAServerAuthModal() {
+  const modal = document.getElementById('naserver-auth-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function submitNAServerAuthModal() {
+  if (naserverAuthMode === 'register') {
+    await registerNAServerFromUI();
+  } else {
+    await loginNAServerFromUI();
+  }
+}
+
 async function loginNAServerFromUI() {
   const email = document.getElementById('naserver-email')?.value.trim();
   const password = document.getElementById('naserver-password')?.value;
@@ -166,6 +205,7 @@ async function loginNAServerFromUI() {
   }
   try {
     await loginNAServerAccount(email, password);
+    closeNAServerAuthModal();
   } catch (error) {
     showToast(`NAServer login failed: ${error.message}`, 'err');
   }
@@ -180,6 +220,7 @@ async function registerNAServerFromUI() {
   }
   try {
     await registerNAServerAccount(email, password);
+    closeNAServerAuthModal();
   } catch (error) {
     showToast(`NAServer registration failed: ${error.message}`, 'err');
   }
