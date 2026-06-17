@@ -98,7 +98,7 @@
             <span class="btn-text">LEARNING STATS<br><small>Progress tracking</small></span>
             <span class="btn-arrow">▶</span>
           </button>
-          <button class="menu-btn btn-settings" onclick="showScreen('screen-settings')">
+          <button class="menu-btn btn-settings" onclick="showSettings()">
             <span class="btn-icon">⚙️</span>
             <span class="btn-text">SETTINGS<br><small>Settings</small></span>
             <span class="btn-arrow">▶</span>
@@ -125,74 +125,23 @@
           <h2 class="panel-title">Data Management</h2>
           <p class="dashboard-subtitle">Manage question sets, server sync, imports, and exports.</p>
         </div>
-        <button class="back-btn dashboard-back" onclick="showScreen('screen-menu')">Back to menu</button>
       </div>
 
       <section class="dashboard-card">
         <div class="dashboard-card-header">
           <div>
             <h3>Question Set</h3>
-            <p>Active set: <span id="active-set-name">Default Set</span></p>
+          <p>Active set: <span id="active-set-name">Default Set</span></p>
           </div>
         </div>
         <div class="dashboard-control-row">
           <select id="question-set-selector" onchange="switchQuestionSet(this.value)"></select>
-          <button class="action-btn btn-secondary" onclick="promptCreateQuestionSet()">New</button>
-          <button class="action-btn btn-secondary" id="btn-rename-set" onclick="promptRenameQuestionSet()">Rename</button>
-          <button class="action-btn btn-danger" id="btn-delete-set" onclick="deleteActiveQuestionSet()">Delete</button>
-          <button class="action-btn btn-secondary" id="btn-share-set" onclick="promptShareQuestionSet()">Share</button>
-          <button class="action-btn" id="btn-backup" onclick="backupQuestionSet()">Backup</button>
-          <button class="action-btn btn-secondary hidden" id="btn-firebase-sets" onclick="showFirebaseSetsModal()">Firebase sets</button>
-        </div>
-      </section>
-
-      <section class="dashboard-card hidden" data-provider-section="firebase">
-        <div class="dashboard-card-header">
-          <div>
-            <h3>Custom Firebase</h3>
-            <p>Use your own Firebase project instead of NAServer.</p>
-          </div>
-          <button type="button" class="toggle-config-btn" onclick="toggleFirebaseConfig()">Firebase config</button>
-        </div>
-        <div id="firebase-config-panel" class="firebase-config-panel hidden">
-          <div class="firebase-config-group">
-            <div class="form-group">
-              <label for="firebase-project-id">Project ID *</label>
-              <input id="firebase-project-id" type="text" placeholder="my-project-123" />
-            </div>
-            <div class="form-group">
-              <label for="firebase-bucket">Storage Bucket *</label>
-              <input id="firebase-bucket" type="text" placeholder="my-project-123.appspot.com" />
-            </div>
-          </div>
-          <div class="firebase-config-group">
-            <div class="form-group">
-              <label for="firebase-api-key">API Key</label>
-              <input id="firebase-api-key" type="text" placeholder="AIzaSy..." />
-            </div>
-            <div class="form-group">
-              <label for="firebase-auth-domain">Auth Domain</label>
-              <input id="firebase-auth-domain" type="text" placeholder="my-project.firebaseapp.com" />
-            </div>
-          </div>
-          <div class="firebase-config-group">
-            <div class="form-group">
-              <label for="firebase-messaging-sender-id">Messaging Sender ID</label>
-              <input id="firebase-messaging-sender-id" type="text" placeholder="123456789" />
-            </div>
-            <div class="form-group">
-              <label for="firebase-app-id">App ID</label>
-              <input id="firebase-app-id" type="text" placeholder="1:123456789:web:abc123..." />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="firebase-measurement-id">Measurement ID</label>
-            <input id="firebase-measurement-id" type="text" placeholder="G-XXXXXXXXXX" />
-          </div>
-          <div class="btn-row">
-            <button class="action-btn" onclick="saveFirebaseConfig()">Save config</button>
-            <button class="action-btn btn-secondary" onclick="testFirebaseConnection()">Test</button>
-          </div>
+          <button class="action-btn btn-set-new" onclick="promptCreateQuestionSet()">＋ New</button>
+          <button class="action-btn btn-set-rename" id="btn-rename-set" onclick="promptRenameQuestionSet()">✎ Rename</button>
+          <button class="action-btn btn-set-delete" id="btn-delete-set" onclick="deleteActiveQuestionSet()">🗑 Delete</button>
+          <button class="action-btn btn-set-share" id="btn-share-set" onclick="promptShareQuestionSet()">↗ Share</button>
+          <button class="action-btn btn-set-pull hidden" id="btn-pull-active" onclick="pullActiveSetFromNAServer()">↓ Pull active</button>
+          <button class="action-btn btn-set-push hidden" id="btn-push-active" onclick="pushActiveSetToNAServer()">↑ Push active</button>
         </div>
       </section>
 
@@ -202,15 +151,11 @@
             <h3>Server Sync</h3>
             <p id="naserver-account-status">Not logged in</p>
           </div>
-          <button type="button" class="toggle-config-btn" onclick="hydrateNAServerConfigUI()">Refresh</button>
         </div>
-        <div class="firebase-config-panel">
+        <div class="server-config-panel">
           <div class="form-group">
             <label for="storage-provider-mode">Storage Server</label>
-            <select id="storage-provider-mode" onchange="setProviderMode(this.value)">
-              <option value="naserver">NAServer</option>
-              <option value="firebase">Custom Firebase</option>
-            </select>
+            <input id="storage-provider-mode" type="text" value="NAServer" readonly />
           </div>
           <div id="naserver-auth-panel" class="server-account-panel">
             <div class="btn-row">
@@ -219,14 +164,10 @@
               <button class="action-btn btn-secondary hidden" id="btn-naserver-logout" onclick="logoutNAServerAccount()">Logout</button>
             </div>
           </div>
-          <div class="btn-row hidden" id="naserver-sync-actions">
-            <button class="action-btn btn-secondary" onclick="pullActiveSetFromNAServer()">Pull active</button>
-            <button class="action-btn btn-secondary" onclick="pushActiveSetToNAServer()">Push active</button>
-          </div>
         </div>
       </section>
 
-      <section class="dashboard-card">
+      <section class="dashboard-card" id="import-export-card">
         <div class="dashboard-card-header">
           <div>
             <h3>Import / Export</h3>
@@ -241,27 +182,22 @@
         </div>
         <div class="import-section">
         <label>Remote import</label>
-        <div class="import-toggle">
-          <input type="radio" id="import-url" name="import-mode" value="url" checked onchange="toggleImportMode()" />
-          <label for="import-url">URL</label>
-          <input type="radio" id="import-id" name="import-mode" value="id" onchange="toggleImportMode()" />
-          <label for="import-id">ID</label>
-        </div>
         <div class="btn-row">
           <input id="import-url-input" type="text" class="import-input" placeholder="Paste JSON URL here..." />
           <button class="action-btn" onclick="handleGetButton()">GET</button>
         </div>
         </div>
       <div id="data-status" class="status-msg"></div>
-      <div class="form-group">
-        <label for="question-search">Search questions</label>
-        <input id="question-search" type="text" placeholder="Search by word, question, romaji, or translation" oninput="updateQuestionSearch()" />
-      </div>
       </section>
       <div class="current-data">
         <h3>Current items: <span id="current-count">0</span></h3>
+        <div class="form-group question-search-row">
+          <label for="question-search">Search questions</label>
+          <input id="question-search" type="text" placeholder="Search by word, question, romaji, translation, or answer" oninput="updateQuestionSearch()" />
+        </div>
         <div id="question-list" class="question-list"></div>
       </div>
+      <button class="back-btn" onclick="showScreen('screen-menu')">◀ BACK TO MENU</button>
     </div>
   </div>
 
@@ -279,13 +215,68 @@
     </div>
   </div>
 
-  <!-- FIREBASE SETS MODAL -->
-  <div id="firebase-sets-modal" class="modal-overlay hidden" onclick="if (event.target === this) closeFirebaseSetsModal()">
-    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="firebase-sets-modal-title">
-      <h3 id="firebase-sets-modal-title" class="modal-title">Firebase sets</h3>
-      <div id="firebase-sets-list" class="firebase-sets-list"></div>
+  <!-- QUESTION EDIT MODAL -->
+  <div id="question-edit-modal" class="modal-overlay hidden" onclick="if (event.target === this) closeQuestionEditModal()">
+    <div class="modal-box question-edit-box" role="dialog" aria-modal="true" aria-labelledby="question-edit-title">
+      <h3 id="question-edit-title" class="modal-title">Edit question</h3>
+      <div class="question-edit-grid">
+        <div class="form-group">
+          <label for="question-edit-word">Word</label>
+          <input id="question-edit-word" type="text" placeholder="学生" />
+        </div>
+        <div class="form-group">
+          <label for="question-edit-romaji">Romaji</label>
+          <input id="question-edit-romaji" type="text" placeholder="gakusei" />
+        </div>
+        <div class="form-group question-edit-wide">
+          <label for="question-edit-translation">Translation</label>
+          <input id="question-edit-translation" type="text" placeholder="Student" />
+        </div>
+        <div class="form-group question-edit-wide">
+          <label for="question-edit-prompt">Question</label>
+          <input id="question-edit-prompt" type="text" placeholder="What does this word mean?" />
+        </div>
+        <div class="form-group question-edit-wide">
+          <label for="question-edit-answers">Answers, one per line</label>
+          <textarea id="question-edit-answers" class="modal-textarea compact-textarea" placeholder="Student&#10;Teacher&#10;School&#10;Book"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="question-edit-correct">Correct answer number</label>
+          <input id="question-edit-correct" type="number" min="1" step="1" value="1" />
+        </div>
+        <div class="form-group question-edit-wide">
+          <label for="question-edit-example">Example</label>
+          <textarea id="question-edit-example" class="modal-textarea compact-textarea" placeholder="Example sentence or note"></textarea>
+        </div>
+      </div>
       <div class="modal-buttons">
-        <button class="action-btn btn-secondary" onclick="closeFirebaseSetsModal()">Close</button>
+        <button class="action-btn btn-secondary" onclick="closeQuestionEditModal()">Cancel</button>
+        <button class="action-btn btn-green" onclick="saveQuestionEdit()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHARE QUESTION SET MODAL -->
+  <div id="share-set-modal" class="modal-overlay hidden" onclick="if (event.target === this) closeShareQuestionSetModal()">
+    <div class="modal-box share-set-box" role="dialog" aria-modal="true" aria-labelledby="share-set-title">
+      <h3 id="share-set-title" class="modal-title">Share question set</h3>
+      <div class="share-toolbar">
+        <div class="form-group">
+          <label for="share-user-search">Search users</label>
+          <input id="share-user-search" type="search" placeholder="Search by email" oninput="updateShareUserSearch()" />
+        </div>
+        <div class="form-group">
+          <label for="share-permission">Permission</label>
+          <select id="share-permission" class="setting-select">
+            <option value="view">View</option>
+            <option value="edit">Edit</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+      </div>
+      <div id="share-user-list" class="share-user-list"></div>
+      <div class="modal-buttons">
+        <button class="action-btn btn-secondary" onclick="closeShareQuestionSetModal()">Close</button>
       </div>
     </div>
   </div>
@@ -294,7 +285,7 @@
   <div id="naserver-auth-modal" class="modal-overlay hidden" onclick="if (event.target === this) closeNAServerAuthModal()">
     <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="naserver-auth-modal-title">
       <h3 id="naserver-auth-modal-title" class="modal-title">NAServer login</h3>
-      <div class="firebase-config-group">
+      <div class="server-config-group">
         <div class="form-group">
           <label for="naserver-email">Email</label>
           <input id="naserver-email" type="email" placeholder="you@example.com" />
@@ -302,6 +293,10 @@
         <div class="form-group">
           <label for="naserver-password">Password</label>
           <input id="naserver-password" type="password" placeholder="Password" />
+        </div>
+        <div class="form-group hidden" id="naserver-password-confirm-group">
+          <label for="naserver-password-confirm">Re-password</label>
+          <input id="naserver-password-confirm" type="password" placeholder="Confirm password" />
         </div>
       </div>
       <div class="modal-buttons">
@@ -506,9 +501,10 @@
         </div>
       </div>
       <div class="btn-row" style="justify-content: center; margin-top: 12px;">
+        <button class="action-btn btn-green" onclick="saveSettingsChanges()">Save Settings</button>
         <button class="action-btn btn-secondary" onclick="resetSettingsToDefault()">🔄 Reset Settings to Default</button>
       </div>
-      <button class="back-btn" onclick="showScreen('screen-menu')">◀ BACK TO MENU</button>
+      <button class="back-btn" onclick="leaveSettingsToMenu()">◀ BACK TO MENU</button>
     </div>
   </div>
 
@@ -554,10 +550,9 @@
       </div>
     </div>
     <div class="hp-bar-wrap"><div class="hp-bar-inner" id="listen-hpbar"></div></div>
-    <div class="listen-container">
-      <div class="question-card" id="listen-instruction" style="position: relative;">
-        <button class="action-btn btn-green btn-sm hidden" id="listen-practice-writing" onclick="showWritePracticeModal(this.dataset.word, this.dataset.romaji, this.dataset.translation)" style="position: absolute; bottom: 8px; right: 8px;">✍️ Practice</button>
-        <div id="listen-audio-status" class="status-msg" style="font-size: 12px;"></div>
+      <div class="listen-container">
+        <div class="question-card" id="listen-instruction" style="position: relative;">
+        <div id="listen-audio-status" class="status-msg"></div>
       </div>
       <div class="btn-row" style="justify-content: center; margin: 12px 0 0;">
         <button class="action-btn btn-secondary" onclick="replayListenAudio()">🔊 Play again</button>
@@ -593,7 +588,6 @@
     <div class="quiz-container">
       <div class="question-card" id="quiz-question" style="position: relative;">
         Loading...
-        <button class="action-btn btn-green btn-sm hidden" id="quiz-practice-writing" onclick="showWritePracticeModal(this.dataset.word, this.dataset.romaji, this.dataset.translation)" style="position: absolute; bottom: 8px; right: 8px;">✍️ Practice</button>
         <button type="button" id="quiz-speak-btn" class="action-btn btn-blue btn-sm" style="position: absolute; top: 8px; right: 8px;" onclick="speakQuizWord()">🔊</button>
       </div>
       <div class="progress-info">
@@ -817,6 +811,18 @@
   <!-- TOAST NOTIFICATION -->
   <div id="toast" class="toast hidden"></div>
 
+  <!-- APP CONFIRM MODAL -->
+  <div id="app-confirm-modal" class="modal-overlay hidden">
+    <div class="modal-box confirm-modal-box" role="dialog" aria-modal="true" aria-labelledby="app-confirm-title">
+      <h3 id="app-confirm-title" class="modal-title">Confirm action</h3>
+      <p id="app-confirm-message" class="confirm-message"></p>
+      <div class="modal-buttons">
+        <button id="app-confirm-cancel" type="button" class="action-btn btn-secondary">Cancel</button>
+        <button id="app-confirm-ok" type="button" class="action-btn btn-danger">Confirm</button>
+      </div>
+    </div>
+  </div>
+
   <div id="naserver-backup-overlay" class="naserver-backup-overlay hidden">
     <div class="naserver-backup-panel">
       <div id="naserver-backup-label" class="naserver-backup-label">Syncing with NAServer...</div>
@@ -827,25 +833,11 @@
     </div>
   </div>
 
-  <!-- Firebase SDK is loaded only when NAServer mode is not active. -->
-  <script>
-    (function loadFirebaseSdkWhenNeeded() {
-      try {
-        const raw = localStorage.getItem('jq_naserver_config');
-        const config = raw ? JSON.parse(raw) : null;
-        if (config && config.baseUrl && config.token) return;
-      } catch (_) {
-      }
-      document.write('<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"><\\/script>');
-      document.write('<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"><\\/script>');
-    })();
-  </script>
   <!-- 3rd party libs -->
   <script src="lib/wanakana.min.js"></script>
   <script src="lib/kanji-canvas.min.js"></script>
   <script src="lib/ref-patterns.js"></script>
   <!-- Core modules -->
-  <script src="js/firebase-config.js"></script>
   <script src="js/naserver-api.js"></script>
   <script src="js/data.js"></script>
   <script src="js/main.js"></script>

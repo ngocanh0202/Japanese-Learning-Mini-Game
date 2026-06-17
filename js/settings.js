@@ -1,8 +1,26 @@
 // ================================================
-// 日本語 QUEST — Settings Module
+// 日本誁EQUEST  ESettings Module
 // ================================================
 
-function showSettings() {
+let settingsDirty = false;
+let settingsSnapshotBeforeEdit = null;
+
+function cloneSettings(value = settings) {
+  return JSON.parse(JSON.stringify(value || {}));
+}
+
+async function showSettings() {
+  if (typeof isNAServerConfigured === 'function' && isNAServerConfigured() && typeof loadSettingsFromNAServer === 'function') {
+    try {
+      const serverSettings = await loadSettingsFromNAServer();
+      settings = mergePlainObjects(settings, serverSettings);
+      saveSettingsToStorage();
+    } catch (error) {
+      showToast(`Settings load failed: ${error.message}`, 'err');
+    }
+  }
+  settingsSnapshotBeforeEdit = cloneSettings();
+  settingsDirty = false;
   showScreen('screen-settings');
   renderSettingsScreen();
 }
@@ -144,16 +162,55 @@ function updateSettingsFromUI() {
   }
   updateFastCorrectCooldownUI();
   
-  saveSettingsToStorage();
+  settingsDirty = true;
   applyScanlinesVisibility();
   updateAnimationBodyClass();
+}
+
+async function saveSettingsChanges() {
+  try {
+    updateSettingsFromUI();
+    saveSettingsToStorage();
+    if (typeof isNAServerConfigured === 'function' && isNAServerConfigured() && typeof saveSettingsToNAServer === 'function') {
+      await saveSettingsToNAServer(settings);
+    }
+    settingsSnapshotBeforeEdit = cloneSettings();
+    settingsDirty = false;
+    showToast('Settings saved', 'ok');
+  } catch (error) {
+    showToast(`Settings save failed: ${error.message}`, 'err');
+  }
+}
+
+async function confirmLeaveSettingsIfDirty() {
+  if (!settingsDirty) return true;
+  const confirmed = await showConfirmDialog({
+    title: 'Unsaved settings',
+    message: 'You have unsaved settings changes. Leave without saving?',
+    confirmText: 'Leave'
+  });
+  if (!confirmed) return false;
+  if (settingsSnapshotBeforeEdit) {
+    settings = cloneSettings(settingsSnapshotBeforeEdit);
+    renderSettingsScreen();
+    applyScanlinesVisibility();
+    updateAnimationBodyClass();
+  }
+  settingsDirty = false;
+  return true;
+}
+
+async function leaveSettingsToMenu() {
+  if (await confirmLeaveSettingsIfDirty()) {
+    showScreen('screen-menu');
+  }
 }
 
 function openGamePrioritySettings(gameType) {
   currentGameType = gameType;
   const modal = document.getElementById('game-priority-modal');
-  const titles = { quiz: '📝 Quiz', listen: '🎧 Listening', flash: '🃏 Flashcard', match: '🧩 Match', type: '⌨ Falling Words', write: '✍️ Writing' };
-  document.getElementById('game-priority-title').textContent = `⚙️ ${titles[gameType]} Settings`;
+  const titles = { quiz: '📝 Quiz', listen: '🎧 Listening', flash: '🃏 Flashcard', match: '🧩 Match', type: '⌨ Falling Words', write: '✍︁EWriting' };
+  document.getElementById('game-priority-title').textContent = `⚙︁E${titles[gameType]} Settings`;
   
   const perGame = settings.priority?.perGame?.[gameType];
   const override = perGame?.enabled === true || perGame?.enabled === 1;
@@ -219,23 +276,15 @@ function saveGamePrioritySettings() {
     settings.priority.perGame[currentGameType] = { enabled: null, incorrect: 8, timeSinceSeen: 3, learning: 2, slowResponse: 3 };
   }
   
-  saveSettingsToStorage();
+  settingsDirty = true;
 }
 
-function resetPlayerProgress() {
-  const confirmed = confirm(
-    '⚠️ WARNING: Reset All Progress\n\n' +
-    'This will reset:\n' +
-    '• HP to 100\n' +
-    '• EXP to 0\n' +
-    '• Level to 1\n' +
-    '• Daily streak to 0\n' +
-    '• All question stats\n' +
-    '• All session history\n\n' +
-    'This action CANNOT be undone.\n\n' +
-    'Are you sure you want to continue?'
-  );
-  
+async function resetPlayerProgress() {
+  const confirmed = await showConfirmDialog({
+    title: 'Reset all progress',
+    message: 'This will reset HP, EXP, level, daily streak, question stats, and session history. This action cannot be undone.',
+    confirmText: 'Reset progress'
+  });
   if (!confirmed) return;
   
   playerHP = 100;
@@ -291,9 +340,9 @@ function resetSettingsToDefault() {
     }
   };
   
-  saveSettingsToStorage();
+  settingsDirty = true;
   renderSettingsScreen();
   applyScanlinesVisibility();
   updateAnimationBodyClass();
-  showToast('⚙️ Settings reset to default', 'ok');
+  showToast('⚙︁ESettings reset to default', 'ok');
 }

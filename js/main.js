@@ -57,18 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateAnimationBodyClass();
   
   const naserverConfig = typeof loadNAServerConfig === 'function' ? loadNAServerConfig() : null;
-  const firebaseMode = typeof isFirebaseProviderMode === 'function' && isFirebaseProviderMode(naserverConfig);
   const naserverConfigured = typeof isNAServerConfigured === 'function' && isNAServerConfigured(naserverConfig);
-  if (!firebaseMode) {
-    localStorage.removeItem('jq_firebase_config');
-  }
-  const firebaseConfig = firebaseMode ? loadFirebaseConfig() : null;
-  if (firebaseConfig) {
-    initializeFirebase(firebaseConfig);
-    showFirebaseSetsButton(true);
-  } else {
-    showFirebaseSetsButton(false);
-  }
   if (typeof hydrateNAServerConfigUI === 'function') hydrateNAServerConfigUI();
   if (naserverConfigured && typeof refreshQuestionSetsFromNAServer === 'function') {
     refreshQuestionSetsFromNAServer().catch(error => {
@@ -123,6 +112,11 @@ function initStars() {
    SCREEN MANAGEMENT
 ══════════════════════════════════════════════ */
 function showScreen(id) {
+  if (id === 'screen-stats' && !(typeof isNAServerConfigured === 'function' && isNAServerConfigured())) {
+    showToast('Please login to NAServer before opening Learning Stats.', 'err');
+    if (typeof openNAServerAuthModal === 'function') openNAServerAuthModal('login');
+    return;
+  }
   const prevScreen = currentScreen;
   currentScreen = id;
   document.querySelectorAll('.screen').forEach(s => {
@@ -193,10 +187,44 @@ async function startGame(type) {
   if (typeof isNAServerConfigured === 'function' && isNAServerConfigured()) {
     try {
       if (typeof setNAServerBusy === 'function') setNAServerBusy(true, 'Preparing NAServer game deck...', 20);
-      await startServerGame(type);
+      let hasServerResume = false;
+      try {
+        await resumeServerGame(type);
+        hasServerResume = true;
+      } catch (resumeError) {
+        const noActiveSession = typeof isNAServerNotFoundError === 'function'
+          ? isNAServerNotFoundError(resumeError)
+          : /not found|session not found|no active session/i.test(resumeError?.message || '');
+        if (!noActiveSession) throw resumeError;
+        await startServerGame(type);
+      }
       if (questions.length === 0) {
         showToast('No server questions available for this set.', 'err');
         return;
+      }
+      if (hasServerResume) {
+        const opened = openGameResumeModal(type, {
+          source: 'server',
+          hasResume: true,
+          onContinue: async () => {
+            await resumeServerGame(type);
+            gameStartTime = Date.now();
+            startFreshGame(type);
+          },
+          onRestart: async () => {
+            if (typeof setNAServerBusy === 'function') setNAServerBusy(true, 'Starting new NAServer game...', 20);
+            try {
+              if (typeof clearGameResumeState === 'function') clearGameResumeState(type);
+              await startServerGame(type);
+              if (typeof clearGameResumeState === 'function') clearGameResumeState(type);
+              gameStartTime = Date.now();
+              startFreshGame(type);
+            } finally {
+              if (typeof setNAServerBusy === 'function') setNAServerBusy(false);
+            }
+          }
+        });
+        if (opened) return;
       }
     } catch (error) {
       showToast(`NAServer game start failed: ${error.message}`, 'err');
@@ -211,7 +239,8 @@ async function startGame(type) {
     return;
   }
   gameStartTime = Date.now();
-  if (typeof openGameResumeModal === 'function' && openGameResumeModal(type)) return;
+  const serverSessionActive = typeof isNAServerGameSessionActive === 'function' && isNAServerGameSessionActive();
+  if (!serverSessionActive && typeof openGameResumeModal === 'function' && openGameResumeModal(type)) return;
   startFreshGame(type);
 }
 
@@ -248,8 +277,10 @@ function getCurrentResumeGameType() {
   return screenMap[currentScreen] || null;
 }
 
-function openGameResumeModal(type) {
-  if (typeof loadGameResumeState !== 'function' || !loadGameResumeState(type)) return false;
+function openGameResumeModal(type, options = {}) {
+  const hasResume = options.hasResume === true
+    || (typeof loadGameResumeState === 'function' && !!loadGameResumeState(type));
+  if (!hasResume) return false;
 
   const modal = document.getElementById('quiz-resume-modal');
   const title = document.getElementById('quiz-resume-title');
@@ -260,18 +291,36 @@ function openGameResumeModal(type) {
   const label = getGameResumeLabel(type);
   if (title) title.textContent = `RESUME ${label.toUpperCase()}?`;
   const message = typeof modal.querySelector === 'function' ? modal.querySelector('.cooldown-modal-message') : null;
-  if (message) message.textContent = `You have an unfinished ${label} session.`;
+  if (message) {
+    message.textContent = options.source === 'server'
+      ? `You have an unfinished ${label} session saved on NAServer.`
+      : `You have an unfinished ${label} session.`;
+  }
 
-  continueBtn.onclick = () => {
+  continueBtn.onclick = async () => {
     modal.classList.add('hidden');
-    if (typeof resumeGameFromState === 'function' && !resumeGameFromState(type)) {
-      startFreshGame(type);
+    try {
+      if (typeof options.onContinue === 'function') {
+        await options.onContinue();
+      } else if (typeof resumeGameFromState === 'function' && !resumeGameFromState(type)) {
+        startFreshGame(type);
+      }
+    } catch (error) {
+      showToast(`Resume failed: ${error.message}`, 'err');
     }
   };
-  restartBtn.onclick = () => {
+  restartBtn.onclick = async () => {
     modal.classList.add('hidden');
-    if (typeof clearGameResumeState === 'function') clearGameResumeState(type);
-    startFreshGame(type);
+    try {
+      if (typeof options.onRestart === 'function') {
+        await options.onRestart();
+      } else {
+        if (typeof clearGameResumeState === 'function') clearGameResumeState(type);
+        startFreshGame(type);
+      }
+    } catch (error) {
+      showToast(`Restart failed: ${error.message}`, 'err');
+    }
   };
   modal.classList.remove('hidden');
   continueBtn.focus();
@@ -298,7 +347,10 @@ function exitGame() {
     recordPlayTime(elapsed);
   }
   const resumeType = getCurrentResumeGameType();
-  if (resumeType && typeof saveGameResumeState === 'function') {
+  const serverSessionActive = typeof isNAServerGameSessionActive === 'function' && isNAServerGameSessionActive();
+  if (resumeType && serverSessionActive && typeof clearGameResumeState === 'function') {
+    clearGameResumeState(resumeType);
+  } else if (resumeType && typeof saveGameResumeState === 'function') {
     const resumeState = saveGameResumeState(resumeType);
     if (resumeState && typeof recordAbandonedSession === 'function') {
       recordAbandonedSession(resumeType, resumeState.score, resumeState.correct, resumeState.wrong, resumeState.id);
@@ -343,6 +395,49 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function showConfirmDialog({
+  title = 'Confirm action',
+  message = 'Are you sure?',
+  confirmText = 'Confirm',
+  cancelText = 'Cancel',
+  danger = true
+} = {}) {
+  const modal = document.getElementById('app-confirm-modal');
+  const titleEl = document.getElementById('app-confirm-title');
+  const messageEl = document.getElementById('app-confirm-message');
+  const okBtn = document.getElementById('app-confirm-ok');
+  const cancelBtn = document.getElementById('app-confirm-cancel');
+  if (!modal || !okBtn || !cancelBtn) {
+    return Promise.resolve(false);
+  }
+
+  if (titleEl) titleEl.textContent = title;
+  if (messageEl) messageEl.textContent = message;
+  okBtn.textContent = confirmText;
+  cancelBtn.textContent = cancelText;
+  okBtn.classList.toggle('btn-danger', !!danger);
+  okBtn.classList.toggle('btn-green', !danger);
+  modal.classList.remove('hidden');
+
+  return new Promise(resolve => {
+    const finish = result => {
+      modal.classList.add('hidden');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      modal.removeEventListener('click', onBackdrop);
+      resolve(result);
+    };
+    const onOk = () => finish(true);
+    const onCancel = () => finish(false);
+    const onBackdrop = event => {
+      if (event.target === modal) finish(false);
+    };
+    okBtn.addEventListener('click', onOk, { once: true });
+    cancelBtn.addEventListener('click', onCancel, { once: true });
+    modal.addEventListener('click', onBackdrop);
+  });
 }
 
 /* ══════════════════════════════════════════════
@@ -403,7 +498,7 @@ function restartGame(onRestart) {
 /* ══════════════════════════════════════════════
   STATS SCREEN
 ══════════════════════════════════════════════ */
-function renderStatsScreen() {
+function renderStatsScreenLocal() {
   loadSessionHistory();
   const { totalCorrect, totalWrong, gameTypeStats } = computeTotalStats();
   const totalAnswers = totalCorrect + totalWrong;
@@ -590,5 +685,174 @@ function renderStatsScreen() {
           <div class="mastery-label">New</div>
         </div>
       </div>`;
+  }
+}
+
+async function renderStatsScreen() {
+  const summaryEl = document.getElementById('stats-summary');
+  const tableEl = document.getElementById('stats-game-types');
+  const masteryEl = document.getElementById('stats-mastery');
+  const historyEl = document.getElementById('stats-history');
+  const loadingHtml = '<div class="stats-empty">Loading server learning stats...</div>';
+  if (summaryEl) summaryEl.innerHTML = loadingHtml;
+  if (tableEl) tableEl.innerHTML = loadingHtml;
+  if (masteryEl) masteryEl.innerHTML = loadingHtml;
+  if (historyEl) historyEl.innerHTML = loadingHtml;
+
+  if (!(typeof isNAServerConfigured === 'function' && isNAServerConfigured())) {
+    showToast('Please login to NAServer before opening Learning Stats.', 'err');
+    showScreen('screen-menu');
+    return;
+  }
+
+  try {
+    const data = await loadLearningStatsFromNAServer();
+    const summary = data.summary || {};
+    const byGameType = data.byGameType || {};
+    const mastery = data.mastery || { mastered: 0, learning: 0, new: 0, total: 0 };
+    const history = Array.isArray(data.history) ? data.history : [];
+    const gameNames = { quiz: 'Quiz', listen: 'Listening', flash: 'Flashcard', match: 'Match', type: 'Falling Words', write: 'Writing' };
+    const gameColors = { quiz: '#0a84ff', listen: '#ff00c8', flash: '#bf5af2', match: '#ffd60a', type: '#ff2d55', write: '#30d158' };
+    const accuracy = Math.round(summary.accuracy || 0);
+    const accuracyColor = accuracy >= 80 ? '#30d158' : accuracy >= 50 ? '#ffd60a' : '#ff2d55';
+
+    if (summaryEl) {
+      summaryEl.innerHTML = `
+        <div class="stats-summary-grid">
+          <div class="stats-summary-card">
+            <div class="stats-summary-label">Total Answers</div>
+            <div class="stats-summary-value">${summary.totalAnswers || 0}</div>
+          </div>
+          <div class="stats-summary-card stats-card-correct">
+            <div class="stats-summary-label">Correct</div>
+            <div class="stats-summary-value" style="color: #30d158">${summary.correct || 0}</div>
+          </div>
+          <div class="stats-summary-card stats-card-wrong">
+            <div class="stats-summary-label">Wrong</div>
+            <div class="stats-summary-value" style="color: #ff2d55">${summary.wrong || 0}</div>
+          </div>
+          <div class="stats-summary-card stats-card-accuracy">
+            <div class="stats-summary-label">Accuracy Rate</div>
+            <div class="stats-summary-value" style="color: ${accuracyColor}">${accuracy}%</div>
+            <div class="stats-accuracy-bar stats-summary-bar">
+              <div class="stats-accuracy-fill" style="width: ${accuracy}%; background: ${accuracyColor}"></div>
+            </div>
+          </div>
+          <div class="stats-summary-card">
+            <div class="stats-summary-label">Level</div>
+            <div class="stats-summary-value">${summary.level || 1}</div>
+          </div>
+          <div class="stats-summary-card">
+            <div class="stats-summary-label">Best Combo</div>
+            <div class="stats-summary-value">${summary.bestCombo || 0}x</div>
+          </div>
+          <div class="stats-summary-card">
+            <div class="stats-summary-label">Sessions Played</div>
+            <div class="stats-summary-value">${summary.sessionsPlayed || history.length}</div>
+          </div>
+          <div class="stats-summary-card">
+            <div class="stats-summary-label">Current EXP</div>
+            <div class="stats-summary-value">${summary.exp || 0}</div>
+          </div>
+        </div>`;
+    }
+
+    if (tableEl) {
+      const rows = ['quiz', 'listen', 'flash', 'match', 'type', 'write'].map(type => {
+        const stats = byGameType[type] || { correct: 0, wrong: 0, total: 0, accuracy: 0 };
+        const typeAccuracy = Math.round(stats.accuracy || 0);
+        const color = gameColors[type];
+        return `
+          <tr>
+            <td style="color: ${color}">${gameNames[type]}</td>
+            <td style="color: #30d158">${stats.correct || 0}</td>
+            <td style="color: #ff2d55">${stats.wrong || 0}</td>
+            <td>${stats.total || 0}</td>
+            <td>
+              <div class="stats-accuracy-bar">
+                <div class="stats-accuracy-fill" style="width: ${typeAccuracy}%; background: ${color}"></div>
+              </div>
+              <span class="stats-accuracy-text">${typeAccuracy}%</span>
+            </td>
+          </tr>`;
+      }).join('');
+      tableEl.innerHTML = `
+        <div class="table-scroll">
+          <table class="stats-table">
+            <thead>
+              <tr>
+                <th>Game Mode</th>
+                <th>Correct</th>
+                <th>Wrong</th>
+                <th>Total</th>
+                <th>Accuracy</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }
+
+    if (masteryEl) {
+      const totalQ = mastery.total || 1;
+      masteryEl.innerHTML = `
+        <div class="stats-mastery-grid">
+          <div class="stats-mastery-item">
+            <div class="mastery-circle mastery-mastered" style="--progress: ${Math.round(((mastery.mastered || 0) / totalQ) * 100)}">
+              <span>${mastery.mastered || 0}</span>
+            </div>
+            <div class="mastery-label">Mastered</div>
+          </div>
+          <div class="stats-mastery-item">
+            <div class="mastery-circle mastery-learning" style="--progress: ${Math.round(((mastery.learning || 0) / totalQ) * 100)}">
+              <span>${mastery.learning || 0}</span>
+            </div>
+            <div class="mastery-label">Learning</div>
+          </div>
+          <div class="stats-mastery-item">
+            <div class="mastery-circle mastery-new" style="--progress: ${Math.round(((mastery.new || 0) / totalQ) * 100)}">
+              <span>${mastery.new || 0}</span>
+            </div>
+            <div class="mastery-label">New</div>
+          </div>
+        </div>`;
+    }
+
+    if (historyEl) {
+      if (history.length === 0) {
+        historyEl.innerHTML = '<div class="stats-empty">No server sessions recorded yet.</div>';
+      } else {
+        const rows = history.map(session => {
+          const date = session.timestamp ? new Date(session.timestamp) : null;
+          const formattedDate = date && !Number.isNaN(date.getTime())
+            ? date.toLocaleDateString('vi-VN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+            : '--';
+          const statusLabel = session.status === 'abandoned' ? ' (Abandoned)' : '';
+          const sessionAccuracy = Math.round(session.accuracy || 0);
+          const sessionColor = sessionAccuracy >= 80 ? '#30d158' : sessionAccuracy >= 50 ? '#ffd60a' : '#ff2d55';
+          const total = session.total || ((session.correct || 0) + (session.wrong || 0));
+          return `
+            <div class="session-history-item">
+              <div class="session-history-icon">${escapeHtml((gameNames[session.type] || '?').slice(0, 1))}</div>
+              <div class="session-history-info">
+                <div class="session-history-type">${escapeHtml(gameNames[session.type] || session.type || 'Unknown')}${statusLabel}</div>
+                <div class="session-history-date">${formattedDate}</div>
+              </div>
+              <div class="session-history-stats">
+                <div class="session-history-score">+${session.score || 0} EXP</div>
+                <div class="session-history-accuracy" style="color: ${sessionColor}">${session.correct || 0}/${total} (${sessionAccuracy}%)</div>
+              </div>
+            </div>`;
+        }).join('');
+        historyEl.innerHTML = `<div class="session-history-list">${rows}</div>`;
+      }
+    }
+  } catch (error) {
+    const errorHtml = `<div class="stats-empty">Failed to load server learning stats: ${escapeHtml(error.message)}</div>`;
+    if (summaryEl) summaryEl.innerHTML = errorHtml;
+    if (tableEl) tableEl.innerHTML = errorHtml;
+    if (masteryEl) masteryEl.innerHTML = errorHtml;
+    if (historyEl) historyEl.innerHTML = errorHtml;
+    showToast(`Failed to load server learning stats: ${error.message}`, 'err');
   }
 }

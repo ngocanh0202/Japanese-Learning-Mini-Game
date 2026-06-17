@@ -3,11 +3,12 @@ const NASERVER_CONFIG_KEY = 'jq_naserver_config';
 const NASERVER_DEFAULT_BASE_URL = 'http://127.0.0.1:8000';
 let naserverAuthMode = 'login';
 let naserverSyncBusy = false;
+let naserverGameSessionId = null;
+let naserverGameState = null;
 
 function normalizeNAServerConfig(config = {}) {
-  const provider = config.provider === 'firebase' ? 'firebase' : 'naserver';
   return {
-    provider,
+    provider: 'naserver',
     baseUrl: (config.baseUrl || NASERVER_DEFAULT_BASE_URL).trim(),
     token: (config.token || '').trim(),
     email: (config.email || '').trim()
@@ -26,10 +27,6 @@ function loadNAServerConfig() {
 function saveNAServerConfig(config) {
   const normalized = normalizeNAServerConfig(config);
   localStorage.setItem(NASERVER_CONFIG_KEY, JSON.stringify(normalized));
-  if (normalized.provider === 'naserver' && normalized.token) {
-    localStorage.removeItem('jq_firebase_config');
-    if (typeof showFirebaseSetsButton === 'function') showFirebaseSetsButton(false);
-  }
   hydrateNAServerConfigUI();
   return normalized;
 }
@@ -39,20 +36,35 @@ function getNAServerBaseUrl(config = loadNAServerConfig()) {
 }
 
 function isNAServerConfigured(config = loadNAServerConfig()) {
-  return config.provider !== 'firebase' && !!(getNAServerBaseUrl(config) && config.token);
+  return !!(getNAServerBaseUrl(config) && config.token);
 }
 
 function isNAServerBusy() {
   return naserverSyncBusy;
 }
 
-function isFirebaseProviderMode(config = loadNAServerConfig()) {
-  return config.provider === 'firebase';
+function canPushActiveLocalSet() {
+  const activeSet = typeof getActiveQuestionSet === 'function'
+    ? getActiveQuestionSet()
+    : (typeof questionSets !== 'undefined' && Array.isArray(questionSets)
+      ? questionSets.find(set => set.id === activeSetId)
+      : null);
+  return !!activeSet && !activeSet.serverId && !activeSet.serverOnly;
+}
+
+function canPullActiveServerSet() {
+  if (!isNAServerConfigured()) return false;
+  const activeSet = typeof getActiveQuestionSet === 'function'
+    ? getActiveQuestionSet()
+    : (typeof questionSets !== 'undefined' && Array.isArray(questionSets)
+      ? questionSets.find(set => set.id === activeSetId)
+      : null);
+  return !!activeSet && !!(activeSet.serverId || activeSet.serverOnly);
 }
 
 function setProviderMode(provider) {
   const current = loadNAServerConfig();
-  const next = saveNAServerConfig({ ...current, provider: provider === 'firebase' ? 'firebase' : 'naserver' });
+  const next = saveNAServerConfig({ ...current, provider: 'naserver' });
   updateProviderModeUI(next);
   return next;
 }
@@ -63,10 +75,28 @@ function getNAServerHeaders(config = loadNAServerConfig()) {
   return headers;
 }
 
+function isNAServerAuthError(response, detail) {
+  return (
+    response.status === 401 ||
+    detail === 'Invalid authentication credentials' ||
+    detail === 'Invalid app token' ||
+    detail === 'Token expired'
+  );
+}
+
+function clearNAServerSession(config = loadNAServerConfig()) {
+  saveNAServerConfig({
+    ...config,
+    token: '',
+    email: '',
+    provider: 'naserver'
+  });
+}
+
 async function requestNAServer(path, options = {}) {
   const config = loadNAServerConfig();
   const baseUrl = getNAServerBaseUrl(config);
-  if (config.provider === 'firebase' || !baseUrl || !config.token) {
+  if (!baseUrl || !config.token) {
     throw new Error('Please login to NAServer first');
   }
 
@@ -77,6 +107,13 @@ async function requestNAServer(path, options = {}) {
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
+    if (isNAServerAuthError(response, payload.detail)) {
+      clearNAServerSession(config);
+      throw new Error('NAServer session expired. Please login again.');
+    }
+    if (response.status === 409) {
+      throw new Error(getConflictMessage());
+    }
     throw new Error(payload.detail || `NAServer request failed with status ${response.status}`);
   }
   return payload;
@@ -87,21 +124,25 @@ function hydrateNAServerConfigUI() {
   const providerSelect = document.getElementById('storage-provider-mode');
   const emailInput = document.getElementById('naserver-email');
   const passwordInput = document.getElementById('naserver-password');
+  const passwordConfirmInput = document.getElementById('naserver-password-confirm');
   const status = document.getElementById('naserver-account-status');
   const loginOpenBtn = document.getElementById('btn-naserver-login-open');
   const registerOpenBtn = document.getElementById('btn-naserver-register-open');
   const logoutBtn = document.getElementById('btn-naserver-logout');
-  const syncActions = document.getElementById('naserver-sync-actions');
-  if (providerSelect) providerSelect.value = config.provider;
+  const pullBtn = document.getElementById('btn-pull-active');
+  const pushBtn = document.getElementById('btn-push-active');
+  if (providerSelect) providerSelect.value = 'NAServer';
   if (emailInput) emailInput.value = config.email || '';
   if (passwordInput) passwordInput.value = '';
+  if (passwordConfirmInput) passwordConfirmInput.value = '';
   if (status) {
     status.textContent = config.token ? `Logged in as ${config.email || 'NAServer user'}` : 'Not logged in';
   }
-  setHidden(loginOpenBtn, !!config.token || config.provider === 'firebase');
-  setHidden(registerOpenBtn, !!config.token || config.provider === 'firebase');
-  setHidden(logoutBtn, !config.token || config.provider === 'firebase');
-  setHidden(syncActions, !isNAServerConfigured(config));
+  setHidden(loginOpenBtn, !!config.token);
+  setHidden(registerOpenBtn, !!config.token);
+  setHidden(logoutBtn, !config.token);
+  setHidden(pullBtn, !canPullActiveServerSet());
+  setHidden(pushBtn, !isNAServerConfigured(config) || !canPushActiveLocalSet());
   updateNAServerBusyUI();
   updateProviderModeUI(config);
 }
@@ -113,25 +154,23 @@ function saveNAServerConfigFromUI() {
 }
 
 function updateProviderModeUI(config = loadNAServerConfig()) {
-  const firebaseSections = document.querySelectorAll ? document.querySelectorAll('[data-provider-section="firebase"]') : [];
   const naserverPanel = document.getElementById('naserver-auth-panel');
-  const syncActions = document.getElementById('naserver-sync-actions');
-  const showFirebase = config.provider === 'firebase';
-  firebaseSections.forEach(section => setHidden(section, !showFirebase));
-  if (naserverPanel) setHidden(naserverPanel, showFirebase);
-  if (syncActions) setHidden(syncActions, !isNAServerConfigured(config));
+  const pullBtn = document.getElementById('btn-pull-active');
+  const pushBtn = document.getElementById('btn-push-active');
+  if (naserverPanel) setHidden(naserverPanel, false);
+  setHidden(pullBtn, !canPullActiveServerSet());
+  setHidden(pushBtn, !isNAServerConfigured(config) || !canPushActiveLocalSet());
   updateNAServerBusyUI();
-  if (typeof showFirebaseSetsButton === 'function') {
-    showFirebaseSetsButton(showFirebase && !!localStorage.getItem('jq_firebase_config'));
-  }
 }
 
 function updateNAServerBusyUI() {
   const overlay = document.getElementById('naserver-backup-overlay');
-  const syncActions = document.getElementById('naserver-sync-actions');
+  const pullBtn = document.getElementById('btn-pull-active');
+  const pushBtn = document.getElementById('btn-push-active');
   const gameButtons = document.querySelectorAll ? document.querySelectorAll('.menu-btn') : [];
   if (overlay) setHidden(overlay, !naserverSyncBusy);
-  if (syncActions) setHidden(syncActions, naserverSyncBusy || !isNAServerConfigured());
+  setHidden(pullBtn, naserverSyncBusy || !canPullActiveServerSet());
+  setHidden(pushBtn, naserverSyncBusy || !isNAServerConfigured() || !canPushActiveLocalSet());
   gameButtons.forEach(btn => {
     btn.disabled = naserverSyncBusy;
     btn.classList.toggle('is-disabled', naserverSyncBusy);
@@ -196,9 +235,9 @@ async function loginNAServerAccount(email, password) {
     email
   });
   try {
-    await backupActiveSetToNAServer({ silent: true });
+    await refreshQuestionSetsFromNAServer({ replaceLocal: true });
   } catch (error) {
-    showToast(`Logged in, backup failed: ${error.message}`, 'err');
+    showToast(`Logged in, failed to load server sets: ${error.message}`, 'err');
   }
   showToast('Logged in to NAServer', 'ok');
   return payload;
@@ -212,6 +251,26 @@ async function registerNAServerAccount(email, password) {
 
 function logoutNAServerAccount() {
   saveNAServerConfig({ ...loadNAServerConfig(), token: '', email: '', provider: 'naserver' });
+  naserverGameSessionId = null;
+  naserverGameState = null;
+  if (typeof resetQuestionSetsToDefaultExample === 'function') {
+    resetQuestionSetsToDefaultExample();
+  } else {
+    const now = new Date().toISOString();
+    questionSets = [{
+      id: 'set-default',
+      name: 'Default Set',
+      questions: [...(typeof SAMPLE_DATA !== 'undefined' ? SAMPLE_DATA : [])],
+      createdAt: now,
+      updatedAt: now
+    }];
+    activeSetId = questionSets[0].id;
+    questions = questionSets[0].questions;
+    saveQuestionSetsToStorage();
+  }
+  refreshQuestionSetUI();
+  refreshDataPreview();
+  updateMenuUI();
   showToast('Logged out from NAServer', 'ok');
 }
 
@@ -220,13 +279,17 @@ function openNAServerAuthModal(mode = 'login') {
   const modal = document.getElementById('naserver-auth-modal');
   const title = document.getElementById('naserver-auth-modal-title');
   const submit = document.getElementById('naserver-auth-submit');
+  const confirmGroup = document.getElementById('naserver-password-confirm-group');
   const config = loadNAServerConfig();
   const emailInput = document.getElementById('naserver-email');
   const passwordInput = document.getElementById('naserver-password');
+  const passwordConfirmInput = document.getElementById('naserver-password-confirm');
   if (emailInput) emailInput.value = config.email || '';
   if (passwordInput) passwordInput.value = '';
+  if (passwordConfirmInput) passwordConfirmInput.value = '';
   if (title) title.textContent = naserverAuthMode === 'register' ? 'NAServer register' : 'NAServer login';
   if (submit) submit.textContent = naserverAuthMode === 'register' ? 'Register' : 'Login';
+  setHidden(confirmGroup, naserverAuthMode !== 'register');
   if (modal) modal.classList.remove('hidden');
 }
 
@@ -261,12 +324,18 @@ async function loginNAServerFromUI() {
 async function registerNAServerFromUI() {
   const email = document.getElementById('naserver-email')?.value.trim();
   const password = document.getElementById('naserver-password')?.value;
+  const passwordConfirm = document.getElementById('naserver-password-confirm')?.value;
   if (!email || !password) {
     showToast('Email and password are required', 'err');
     return;
   }
+  if (password !== passwordConfirm) {
+    showToast('Passwords do not match', 'err');
+    return;
+  }
   try {
     await registerNAServerAccount(email, password);
+    showToast('Registration submitted. Account is pending admin approval.', 'ok');
     closeNAServerAuthModal();
   } catch (error) {
     showToast(`NAServer registration failed: ${error.message}`, 'err');
@@ -274,8 +343,14 @@ async function registerNAServerFromUI() {
 }
 
 async function pullActiveSetFromNAServer() {
+  const confirmed = await showConfirmDialog({
+    title: 'Pull NAServer question sets',
+    message: 'Pulling from NAServer will replace all current question sets, including local sets that have not been pushed. Continue?',
+    confirmText: 'Pull sets'
+  });
+  if (!confirmed) return;
   try {
-    await refreshQuestionSetsFromNAServer();
+    await refreshQuestionSetsFromNAServer({ replaceLocal: true });
     showToast('Loaded NAServer question sets', 'ok');
   } catch (error) {
     showToast(`NAServer pull failed: ${error.message}`, 'err');
@@ -284,6 +359,17 @@ async function pullActiveSetFromNAServer() {
 
 async function pushActiveSetToNAServer() {
   await backupActiveSetToNAServer();
+}
+
+async function loadSettingsFromNAServer() {
+  return requestNAServer('/api/japanese-learning-game/settings');
+}
+
+async function saveSettingsToNAServer(nextSettings) {
+  return requestNAServer('/api/japanese-learning-game/settings', {
+    method: 'PUT',
+    body: nextSettings
+  });
 }
 
 function normalizeServerQuestionSetMeta(data) {
@@ -306,15 +392,55 @@ function normalizeServerQuestionSetMeta(data) {
   };
 }
 
-async function refreshQuestionSetsFromNAServer() {
+function getQuestionSetByLocalOrServerId(localOrServerId) {
+  return questionSets.find(item => item.id === localOrServerId || item.serverId === localOrServerId);
+}
+
+function getServerIdFromSetRef(localOrServerId) {
+  const set = getQuestionSetByLocalOrServerId(localOrServerId);
+  return set?.serverId || String(localOrServerId || '').replace(/^server-/, '');
+}
+
+function getExpectedUpdatedAt(localOrServerId) {
+  const set = getQuestionSetByLocalOrServerId(localOrServerId);
+  return set?.updatedAt || '';
+}
+
+function withExpectedUpdatedAt(localOrServerId, body = {}) {
+  const expected = getExpectedUpdatedAt(localOrServerId);
+  return expected ? { ...body, expected_updated_at: expected } : body;
+}
+
+function getConflictMessage() {
+  return 'Data on server has changed. Please pull latest before editing/deleting.';
+}
+
+function mergeServerQuestionSets(serverSets) {
+  const serverIds = new Set(serverSets.map(set => set.serverId));
+  const localSets = questionSets.filter(set => !set.serverOnly && !set.serverId);
+  const pushedLocalSets = questionSets.filter(set => set.serverId && !set.serverOnly && !serverIds.has(set.serverId));
+  return [
+    ...localSets,
+    ...pushedLocalSets,
+    ...serverSets
+  ];
+}
+
+async function refreshQuestionSetsFromNAServer(options = {}) {
   const sets = await requestNAServer('/api/japanese-learning-game/sets');
   const normalized = Array.isArray(sets) ? sets.map(normalizeServerQuestionSetMeta) : [];
-  if (normalized.length === 0) return [];
-
+  const previousActiveId = activeSetId;
   questionSets = normalized;
-  const active = normalized.find(set => set.isActive) || normalized[0];
-  activeSetId = active.id;
-  questions = [];
+  const preferredActive = options.preferredId ? questionSets.find(set => set.id === options.preferredId || set.serverId === options.preferredId) : null;
+  const activeStillExists = questionSets.find(set => set.id === previousActiveId);
+  const serverActive = normalized.find(set => set.isActive);
+  const active = preferredActive || activeStillExists || serverActive || questionSets[0] || null;
+  activeSetId = active ? active.id : null;
+  if (typeof syncQuestionsFromActiveSet === 'function') {
+    syncQuestionsFromActiveSet();
+  } else {
+    questions = active && !active.serverOnly ? (active.questions || []) : [];
+  }
   saveQuestionSetsToStorage();
   refreshQuestionSetUI();
   refreshDataPreview();
@@ -323,8 +449,8 @@ async function refreshQuestionSetsFromNAServer() {
 }
 
 async function setActiveQuestionSetOnNAServer(localOrServerId) {
-  const set = questionSets.find(item => item.id === localOrServerId || item.serverId === localOrServerId);
-  const serverId = set?.serverId || String(localOrServerId || '').replace(/^server-/, '');
+  const set = getQuestionSetByLocalOrServerId(localOrServerId);
+  const serverId = getServerIdFromSetRef(localOrServerId);
   if (!serverId) throw new Error('No NAServer question set selected');
   await requestNAServer(`/api/japanese-learning-game/active-set?set_id=${encodeURIComponent(serverId)}`, {
     method: 'POST'
@@ -353,27 +479,161 @@ async function loadActiveSetFromNAServer() {
   return data;
 }
 
-async function startServerGame(gameType) {
-  const data = await requestNAServer('/api/japanese-learning-game/game/start', {
-    method: 'POST',
-    body: { game_type: gameType }
+async function loadQuestionSetPageFromNAServer(localOrServerId, page = 1, pageSize = 4) {
+  const serverId = getServerIdFromSetRef(localOrServerId);
+  if (!serverId) throw new Error('No NAServer question set selected');
+  const query = arguments.length >= 4 ? String(arguments[3] || '').trim() : '';
+  const params = new URLSearchParams({
+    page: String(page),
+    page_size: String(pageSize)
   });
-  questions = Array.isArray(data.questions) ? data.questions : [];
+  if (query) params.set('q', query);
+  return requestNAServer(`/api/japanese-learning-game/sets/${encodeURIComponent(serverId)}?${params.toString()}`);
+}
+
+async function updateQuestionOnNAServer(localOrServerId, questionId, question) {
+  const serverId = getServerIdFromSetRef(localOrServerId);
+  if (!serverId) throw new Error('No NAServer question set selected');
+  if (!questionId) throw new Error('No NAServer question selected');
+  return requestNAServer(`/api/japanese-learning-game/sets/${encodeURIComponent(serverId)}/questions/${encodeURIComponent(questionId)}`, {
+    method: 'PUT',
+    body: withExpectedUpdatedAt(localOrServerId, question)
+  });
+}
+
+async function addQuestionOnNAServer(localOrServerId, question) {
+  const serverId = getServerIdFromSetRef(localOrServerId);
+  if (!serverId) throw new Error('No NAServer question set selected');
+  return requestNAServer(`/api/japanese-learning-game/sets/${encodeURIComponent(serverId)}/questions`, {
+    method: 'POST',
+    body: question
+  });
+}
+
+async function deleteQuestionOnNAServer(localOrServerId, questionId) {
+  const serverId = getServerIdFromSetRef(localOrServerId);
+  if (!serverId) throw new Error('No NAServer question set selected');
+  if (!questionId) throw new Error('No NAServer question selected');
+  const params = new URLSearchParams();
+  const expected = getExpectedUpdatedAt(localOrServerId);
+  if (expected) params.set('expected_updated_at', expected);
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return requestNAServer(`/api/japanese-learning-game/sets/${encodeURIComponent(serverId)}/questions/${encodeURIComponent(questionId)}${query}`, {
+    method: 'DELETE'
+  });
+}
+
+async function searchJapaneseGameUsersOnNAServer(query = '', page = 1, pageSize = 20) {
+  const params = new URLSearchParams({
+    q: String(query || '').trim(),
+    page: String(page),
+    page_size: String(pageSize)
+  });
+  return requestNAServer(`/api/japanese-learning-game/users?${params.toString()}`);
+}
+
+function syncNAServerGamePayload(data) {
+  naserverGameSessionId = data.session_id || naserverGameSessionId || null;
+  naserverGameState = data.state || data || null;
+  const currentQuestion = naserverGameState?.current_question || data.current_question || null;
+  if (currentQuestion) {
+    questions = [currentQuestion];
+  } else if (Array.isArray(data.questions)) {
+    questions = data.questions;
+  } else {
+    questions = [];
+  }
   initQuestionStats(questions);
-  await loadQuestionStatsFromNAServer();
   refreshQuestionSetUI();
   updateMenuUI();
   return data;
 }
 
+async function startServerGame(gameType) {
+  naserverGameSessionId = null;
+  naserverGameState = null;
+  const data = await requestNAServer('/api/japanese-learning-game/start', {
+    method: 'POST',
+    body: { game_type: gameType }
+  });
+  syncNAServerGamePayload(data);
+  await loadQuestionStatsFromNAServer();
+  return data;
+}
+
+async function resumeServerGame(gameType) {
+  const data = await requestNAServer(`/api/japanese-learning-game/session?game_type=${encodeURIComponent(gameType)}`);
+  syncNAServerGamePayload(data);
+  return data;
+}
+
+async function submitGameAnswerOnNAServer(questionId, answerIndex, responseTime, gameType = '') {
+  if (!naserverGameSessionId) throw new Error('No active NAServer game session');
+  try {
+    const result = await requestNAServer(`/api/japanese-learning-game/answer?session_id=${encodeURIComponent(naserverGameSessionId)}`, {
+      method: 'POST',
+      body: {
+        question_id: String(questionId).includes('::') ? String(questionId).split('::').pop() : questionId,
+        answer_index: answerIndex,
+        response_time_ms: Number.isFinite(responseTime) ? Math.max(0, Math.round(responseTime)) : 0
+      }
+    });
+    naserverGameState = result.state || result || naserverGameState;
+    return result;
+  } catch (error) {
+    if (gameType && isNAServerNotFoundError(error)) {
+      const data = await resumeServerGame(gameType);
+      return {
+        ...(data.state || data),
+        state: data.state || data,
+        sync_required: true,
+        reason: 'session_not_found'
+      };
+    }
+    throw error;
+  }
+}
+
+function isNAServerNotFoundError(error) {
+  return /not found|session not found|no active session/i.test(error?.message || '');
+}
+
+async function nextServerGameQuestion(gameType = '') {
+  if (!naserverGameSessionId) throw new Error('No active NAServer game session');
+  try {
+    const data = await requestNAServer(`/api/japanese-learning-game/next?session_id=${encodeURIComponent(naserverGameSessionId)}`, {
+      method: 'POST'
+    });
+    syncNAServerGamePayload(data);
+    return data;
+  } catch (error) {
+    if (gameType && isNAServerNotFoundError(error)) {
+      return resumeServerGame(gameType);
+    }
+    throw error;
+  }
+}
+
+function isNAServerGameSessionActive() {
+  return !!naserverGameSessionId;
+}
+
+function getNAServerGameState() {
+  return naserverGameState;
+}
+
 async function loadQuestionStatsFromNAServer() {
-  questionStats = await requestNAServer('/api/japanese-learning-game/stats/questions');
+  questionStats = await requestNAServer('/api/japanese-learning-game/questions');
   return questionStats;
+}
+
+async function loadLearningStatsFromNAServer() {
+  return requestNAServer('/api/japanese-learning-game/overview');
 }
 
 async function recordAttemptOnNAServer(questionId, gameType, correct, responseTime) {
   const responseTimeMs = Number.isFinite(responseTime) ? Math.max(0, Math.round(responseTime)) : null;
-  const payload = await requestNAServer('/api/japanese-learning-game/stats/attempt', {
+  const payload = await requestNAServer('/api/japanese-learning-game/attempt', {
     method: 'POST',
     body: {
       question_id: String(questionId).includes('::') ? String(questionId).split('::').pop() : questionId,
@@ -392,36 +652,46 @@ async function recordAttemptOnNAServer(questionId, gameType, correct, responseTi
 }
 
 async function renameQuestionSetOnNAServer(localId, name) {
-  const set = questionSets.find(item => item.id === localId || item.serverId === localId);
+  const set = getQuestionSetByLocalOrServerId(localId);
   if (!set?.serverId) throw new Error('No NAServer question set selected');
   const fullSet = await requestNAServer(`/api/japanese-learning-game/sets/${encodeURIComponent(set.serverId)}`);
   await requestNAServer(`/api/japanese-learning-game/sets/${encodeURIComponent(set.serverId)}`, {
     method: 'PUT',
-    body: {
+    body: withExpectedUpdatedAt(localId, {
       name,
       questions: Array.isArray(fullSet.questions) ? fullSet.questions : []
-    }
+    })
   });
-  await refreshQuestionSetsFromNAServer();
+  await refreshQuestionSetsFromNAServer({ preferredId: set.id });
 }
 
 async function deleteQuestionSetOnNAServer(localId) {
-  const set = questionSets.find(item => item.id === localId || item.serverId === localId);
+  const set = getQuestionSetByLocalOrServerId(localId);
   if (!set?.serverId) throw new Error('No NAServer question set selected');
-  await requestNAServer(`/api/japanese-learning-game/sets/${encodeURIComponent(set.serverId)}`, {
+  const params = new URLSearchParams();
+  const expected = getExpectedUpdatedAt(localId);
+  if (expected) params.set('expected_updated_at', expected);
+  const query = params.toString() ? `?${params.toString()}` : '';
+  await requestNAServer(`/api/japanese-learning-game/sets/${encodeURIComponent(set.serverId)}${query}`, {
     method: 'DELETE'
   });
   await refreshQuestionSetsFromNAServer();
 }
 
-async function shareQuestionSetOnNAServer(localId, email, permission = 'view') {
+async function shareQuestionSetOnNAServer(localId, email, permission = 'view', userId = '') {
   const set = questionSets.find(item => item.id === localId || item.serverId === localId);
   if (!set?.serverId) throw new Error('No NAServer question set selected');
+  const body = { permission };
+  if (userId) {
+    body.user_id = userId;
+  } else {
+    body.email = email;
+  }
   await requestNAServer(`/api/japanese-learning-game/sets/${encodeURIComponent(set.serverId)}/share`, {
     method: 'POST',
-    body: { email, permission }
+    body
   });
-  await refreshQuestionSetsFromNAServer();
+  await refreshQuestionSetsFromNAServer({ preferredId: set.id });
 }
 
 async function backupActiveSetToNAServer(options = {}) {
@@ -450,7 +720,7 @@ async function backupActiveSetToNAServer(options = {}) {
       setNAServerProgress('Updating existing NAServer set...', 35);
       await requestNAServer(`/api/japanese-learning-game/sets/${encodeURIComponent(activeSet.serverId)}`, {
         method: 'PUT',
-        body
+        body: withExpectedUpdatedAt(activeSet.id, body)
       });
       saved = { id: activeSet.serverId };
     } else {
@@ -467,7 +737,7 @@ async function backupActiveSetToNAServer(options = {}) {
     });
     setNAServerProgress('Refreshing server question sets...', 88);
     activeSet.updatedAt = new Date().toISOString();
-    await refreshQuestionSetsFromNAServer();
+    await refreshQuestionSetsFromNAServer({ preferredId: saved.id });
     setNAServerProgress('Backup complete', 100);
     if (!options.silent) showToast('Pushed active set to NAServer', 'ok');
   } catch (error) {

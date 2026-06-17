@@ -399,19 +399,97 @@ function updateQuestionStats(questionIdOrIndex, gameType, isCorrect, responseTim
 
 /* ── SHUFFLE ANSWER OPTIONS ── */
 function shuffleAnswerOptions(q) {
+  if (q.c === undefined || q.c === null) {
+    return { options: [...q.a], correctIndex: null, originalIndexes: q.a.map((_, i) => i) };
+  }
   if (!settings.shuffleAnswers) {
-    return { options: [...q.a], correctIndex: q.c };
+    return { options: [...q.a], correctIndex: q.c, originalIndexes: q.a.map((_, i) => i) };
   }
   
-  const indexed = q.a.map((ans, i) => ({ text: ans, wasCorrect: i === q.c }));
+  const indexed = q.a.map((ans, i) => ({ text: ans, originalIndex: i, wasCorrect: i === q.c }));
   const shuffled = shuffle(indexed);
   const options = shuffled.map(item => item.text);
   const correctIndex = shuffled.findIndex(item => item.wasCorrect);
+  const originalIndexes = shuffled.map(item => item.originalIndex);
   
-  return { options, correctIndex };
+  return { options, correctIndex, originalIndexes };
 }
 
 /* ── LEVEL SYSTEM ── */
+function getRenderedChoiceIndex(originalIndexes, originalIndex) {
+  if (originalIndex === undefined || originalIndex === null) {
+    return -1;
+  }
+
+  return Array.isArray(originalIndexes)
+    ? originalIndexes.indexOf(originalIndex)
+    : originalIndex;
+}
+
+function renderServerAnsweredChoices({
+  buttons,
+  answer,
+  originalIndexes,
+  explanationEl,
+  explanationText,
+  nextBtn,
+  speakBtn = null,
+}) {
+  if (!answer || !buttons) {
+    return false;
+  }
+
+  const choiceButtons = Array.from(buttons);
+  const correctChoiceIndex = getRenderedChoiceIndex(originalIndexes, answer.correct_index);
+  const chosenChoiceIndex = getRenderedChoiceIndex(originalIndexes, answer.answer_index);
+
+  choiceButtons.forEach(choiceBtn => {
+    choiceBtn.disabled = true;
+  });
+
+  if (correctChoiceIndex >= 0 && choiceButtons[correctChoiceIndex]) {
+    choiceButtons[correctChoiceIndex].classList.add('correct');
+  }
+
+  if (answer.correct === false && chosenChoiceIndex >= 0 && choiceButtons[chosenChoiceIndex]) {
+    choiceButtons[chosenChoiceIndex].classList.add('wrong');
+  }
+
+  if (explanationEl && explanationText) {
+    explanationEl.textContent = explanationText;
+    explanationEl.classList.remove('hidden');
+  }
+
+  if (nextBtn) {
+    nextBtn.classList.remove('hidden');
+  }
+
+  if (speakBtn) {
+    speakBtn.classList.remove('hidden');
+  }
+
+  return true;
+}
+
+function setAnswerButtonLoading(btn, loading) {
+  if (!btn) return;
+  btn.classList.toggle('answer-loading', !!loading);
+  document.body?.classList.toggle('answer-check-loading', !!loading);
+  const existing = btn.querySelector?.('.answer-loading-spinner');
+  if (loading) {
+    if (!existing) {
+      const spinner = document.createElement('span');
+      spinner.className = 'answer-loading-spinner';
+      spinner.setAttribute('aria-hidden', 'true');
+      btn.appendChild(spinner);
+    }
+    btn.setAttribute('aria-busy', 'true');
+  } else {
+    existing?.remove();
+    btn.removeAttribute('aria-busy');
+  }
+}
+
 function getXpForLevel(level) {
   return Math.floor(XP_PER_LEVEL * Math.pow(LEVEL_XP_CURVE, level - 1));
 }

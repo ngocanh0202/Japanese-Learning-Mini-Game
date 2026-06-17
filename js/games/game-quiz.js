@@ -129,25 +129,56 @@ function resumeQuizFromState() {
   return true;
 }
 
+function syncQuizIndexFromNAServerState() {
+  if (!(typeof isNAServerGameSessionActive === 'function' && isNAServerGameSessionActive())) return false;
+  const state = typeof getNAServerGameState === 'function' ? getNAServerGameState() : null;
+  if (!state || state.game_type !== 'quiz') return false;
+  const currentQuestionId = state.current_question?.id;
+  if (currentQuestionId) {
+    const index = quizDeck.findIndex(q => q.id === currentQuestionId || q.questionId === currentQuestionId);
+    if (index >= 0) {
+      quizIdx = index;
+      return true;
+    }
+  }
+  if (Number.isInteger(state.current_index)) {
+    quizIdx = state.current_index;
+    return true;
+  }
+  return false;
+}
+
 function startQuiz() {
   clearQuizResumeState();
-  quizDeck = getPrioritizedDeck(questions, 'quiz').map(q => ({
+  const sourceQuestions = (typeof isNAServerGameSessionActive === 'function' && isNAServerGameSessionActive())
+    ? [...questions]
+    : getPrioritizedDeck(questions, 'quiz');
+  quizDeck = sourceQuestions.map(q => ({
     ...q,
     questionId: generateQuestionId(q)
   }));
-  if (settings.questionLimitEnabled) {
+  const serverSessionActive = typeof isNAServerGameSessionActive === 'function' && isNAServerGameSessionActive();
+  if (settings.questionLimitEnabled && !serverSessionActive) {
     quizDeck = quizDeck.slice(0, settings.questionLimit);
   }
   if (quizDeck.length === 0) {
     handleEmptyGameDeck('quiz');
     return;
   }
-  quizIdx = 0;
-  quizHP = 100;
-  quizScore = 0;
-  quizCombo = 0;
-  quizCorrect = 0;
-  quizWrong = 0;
+  const serverState = typeof getNAServerGameState === 'function' && serverSessionActive
+    ? getNAServerGameState()
+    : null;
+  if (serverSessionActive && serverState?.game_over && !serverState.current_question) {
+    quizComplete();
+    return;
+  }
+  quizIdx = serverState?.game_type === 'quiz' ? (serverState.current_index || 0) : 0;
+  syncQuizIndexFromNAServerState();
+  quizHP = serverState?.game_type === 'quiz' ? (serverState.hp ?? 100) : 100;
+  quizScore = serverState?.game_type === 'quiz' ? (serverState.score || 0) : 0;
+  quizCombo = serverState?.game_type === 'quiz' ? (serverState.combo || 0) : 0;
+  quizCorrect = serverState?.game_type === 'quiz' ? (serverState.correct_count || 0) : 0;
+  quizWrong = serverState?.game_type === 'quiz' ? (serverState.wrong_count || 0) : 0;
   quizTimeLeft = settings.quizTimeLimit;
   stopQuizTimer();
   showScreen('screen-quiz');
@@ -177,55 +208,109 @@ function renderQuiz() {
   quizQuestionStartTime = Date.now();
 
   const questionEl = document.getElementById('quiz-question');
-  const practiceBtn = document.getElementById('quiz-practice-writing');
   const speakBtn = document.getElementById('quiz-speak-btn');
   questionEl.innerHTML = q.q;
-  if (practiceBtn) {
-    questionEl.appendChild(practiceBtn);
-    practiceBtn.classList.add('hidden');
-    practiceBtn.classList.remove('practice-highlight');
-  }
   if (speakBtn) {
     questionEl.appendChild(speakBtn);
     speakBtn.classList.add('hidden');
   }
-  document.getElementById('quiz-progress').textContent = `${quizIdx + 1} / ${quizDeck.length}`;
+  const serverState = typeof getNAServerGameState === 'function' && isNAServerGameSessionActive()
+    ? getNAServerGameState()
+    : null;
+  const progressIndex = serverState?.game_type === 'quiz'
+    ? Math.min((serverState.current_index || 0) + 1, serverState.total || quizDeck.length)
+    : quizIdx + 1;
+  const progressTotal = serverState?.game_type === 'quiz' ? (serverState.total || quizDeck.length) : quizDeck.length;
+  document.getElementById('quiz-progress').textContent = `${progressIndex} / ${progressTotal}`;
   document.getElementById('quiz-explanation').classList.add('hidden');
   document.getElementById('quiz-next').classList.add('hidden');
   
   const grid = document.getElementById('quiz-choices');
   grid.innerHTML = '';
   
-  const { options, correctIndex } = shuffleAnswerOptions(q);
+  const { options, correctIndex, originalIndexes } = shuffleAnswerOptions(q);
   options.forEach((ans, i) => {
     const btn = document.createElement('button');
     btn.className = 'choice-btn';
     btn.textContent = ans;
-    btn.onclick = () => answerQuiz(i, btn, q, correctIndex);
+    btn.onclick = () => answerQuiz(i, btn, q, correctIndex, originalIndexes);
     grid.appendChild(btn);
   });
+
+  if (serverState?.game_type === 'quiz' && serverState.current_answered && serverState.current_answer) {
+    renderServerAnsweredChoices({
+      buttons: grid.querySelectorAll('.choice-btn'),
+      answer: serverState.current_answer,
+      originalIndexes,
+      explanationEl: document.getElementById('quiz-explanation'),
+      explanationText: q.ex || '',
+      nextBtn: document.getElementById('quiz-next'),
+      speakBtn,
+    });
+  }
 }
 
-function answerQuiz(chosen, btn, q, correctIndex) {
+async function answerQuiz(chosen, btn, q, correctIndex, originalIndexes = null) {
   stopQuizTimer();
   const responseTime = Date.now() - quizQuestionStartTime;
   const quizChoices = document.getElementById('quiz-choices');
   const allBtns = quizChoices ? quizChoices.querySelectorAll('.choice-btn') : document.querySelectorAll('.choice-btn');
   allBtns.forEach(b => b.disabled = true);
-  const correct = chosen === correctIndex;
+  let correct = chosen === correctIndex;
+  let serverChecked = false;
+  const shouldCheckOnServer = typeof isNAServerGameSessionActive === 'function' && isNAServerGameSessionActive();
 
-  if (allBtns[correctIndex]) {
+    if (shouldCheckOnServer && typeof submitGameAnswerOnNAServer === 'function') {
+      try {
+        const answerIndex = Array.isArray(originalIndexes) ? originalIndexes[chosen] : chosen;
+        if (typeof setAnswerButtonLoading === 'function') setAnswerButtonLoading(btn, true);
+        const result = await submitGameAnswerOnNAServer(q.id || q.questionId, answerIndex, responseTime, 'quiz');
+        if (result.sync_required) {
+          syncQuizIndexFromNAServerState();
+          renderQuiz();
+          showToast('Game session synced. Please answer the current question.', 'info');
+          return;
+        }
+        correct = !!result.correct;
+        const serverCorrectIndex = result.correct_index;
+        correctIndex = Array.isArray(originalIndexes) ? originalIndexes.indexOf(serverCorrectIndex) : serverCorrectIndex;
+        q.c = serverCorrectIndex;
+        quizHP = typeof result.hp === 'number' ? result.hp : quizHP;
+        quizScore = typeof result.score === 'number' ? result.score : quizScore;
+        quizCombo = typeof result.combo === 'number' ? result.combo : quizCombo;
+        quizCorrect = typeof result.correct_count === 'number' ? result.correct_count : quizCorrect;
+        quizWrong = typeof result.wrong_count === 'number' ? result.wrong_count : quizWrong;
+        serverChecked = true;
+      } catch (error) {
+        if (typeof setAnswerButtonLoading === 'function') setAnswerButtonLoading(btn, false);
+        allBtns.forEach(b => b.disabled = false);
+        showToast(`Answer check failed: ${error.message}`, 'err');
+        return;
+      } finally {
+        if (typeof setAnswerButtonLoading === 'function') setAnswerButtonLoading(btn, false);
+      }
+  } else if ((q.c === undefined || q.c === null) && typeof submitGameAnswerOnNAServer === 'function') {
+    allBtns.forEach(b => b.disabled = false);
+    showToast('Answer check requires an active NAServer game session', 'err');
+    return;
+  }
+
+  if (correctIndex !== null && allBtns[correctIndex]) {
     allBtns[correctIndex].classList.add('correct');
   }
 
   let cooldownPrompted = false;
-  if (correct) {
-    quizCombo++;
-    quizCorrect++;
-    const pts = Math.floor(BASE_XP_REWARD * Math.max(1, quizCombo) * 1.5);
-    quizScore += pts;
-    playerEXP += pts;
-    updateQuestionStats(quizDeck[quizIdx].questionId, 'quiz', true, responseTime);
+    if (correct) {
+      if (!serverChecked) {
+        quizCombo++;
+        quizCorrect++;
+      }
+      const pts = Math.floor(BASE_XP_REWARD * Math.max(1, quizCombo) * 1.5);
+      if (!serverChecked) {
+        quizScore += pts;
+        playerEXP += pts;
+      }
+    if (!serverChecked) updateQuestionStats(quizDeck[quizIdx].questionId, 'quiz', true, responseTime);
     cooldownPrompted = maybeApplyFastCorrectCooldown(quizDeck[quizIdx].questionId, 'quiz', responseTime, (applied) => {
       if (applied && quizIdx < quizDeck.length) {
         nextQuiz();
@@ -235,26 +320,20 @@ function answerQuiz(chosen, btn, q, correctIndex) {
     });
     showToast(`✅ Correct! +${pts} EXP 🔥 x${quizCombo}`, 'ok');
     showComboPopup(`+${pts} ⭐`, btn.getBoundingClientRect().left, btn.getBoundingClientRect().top);
-  } else {
-    btn.classList.add('wrong');
-    quizCombo = 0;
-    quizWrong++;
-    if (!settings.disableGameOver) {
-      quizHP = Math.max(0, quizHP - 20);
-    }
-    updateQuestionStats(quizDeck[quizIdx].questionId, 'quiz', false, responseTime);
+    } else {
+      btn.classList.add('wrong');
+      if (!serverChecked) {
+        quizCombo = 0;
+        quizWrong++;
+      }
+      if (serverChecked) updateQuizHUD();
+      if (!settings.disableGameOver) {
+        if (!serverChecked) quizHP = Math.max(0, quizHP - 20);
+      }
+    if (!serverChecked) updateQuestionStats(quizDeck[quizIdx].questionId, 'quiz', false, responseTime);
     showToast('❌ Wrong!', 'err');
     document.getElementById('screen-quiz').classList.add('shake');
     setTimeout(() => document.getElementById('screen-quiz').classList.remove('shake'), 400);
-    
-    const practiceBtn = document.getElementById('quiz-practice-writing');
-    if (practiceBtn) {
-      practiceBtn.dataset.word = q.word;
-      practiceBtn.dataset.romaji = q.romaji;
-      practiceBtn.dataset.translation = q.translation;
-      practiceBtn.classList.remove('hidden');
-      practiceBtn.classList.add('practice-highlight');
-    }
   }
 
   if (q.ex) {
@@ -275,8 +354,28 @@ function answerQuiz(chosen, btn, q, correctIndex) {
   }
 }
 
-function nextQuiz() {
-  quizIdx++;
+async function nextQuiz() {
+  if (typeof isNAServerGameSessionActive === 'function' && isNAServerGameSessionActive()) {
+    if (typeof nextServerGameQuestion !== 'function') {
+      showToast('NAServer next question API is not available', 'err');
+      return;
+    }
+    try {
+      const data = await nextServerGameQuestion('quiz');
+      const state = data.state || data || {};
+      if (state.game_over || !state.current_question) {
+        quizComplete();
+        return;
+      }
+      startQuiz();
+    } catch (error) {
+      showToast(`Next question failed: ${error.message}`, 'err');
+    }
+    return;
+  }
+  if (!syncQuizIndexFromNAServerState()) {
+    quizIdx++;
+  }
   renderQuiz();
 }
 

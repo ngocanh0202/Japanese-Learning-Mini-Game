@@ -83,26 +83,57 @@ function resumeListenFromState() {
   return true;
 }
 
+function syncListenIndexFromNAServerState() {
+  if (!(typeof isNAServerGameSessionActive === 'function' && isNAServerGameSessionActive())) return false;
+  const state = typeof getNAServerGameState === 'function' ? getNAServerGameState() : null;
+  if (!state || state.game_type !== 'listen') return false;
+  const currentQuestionId = state.current_question?.id;
+  if (currentQuestionId) {
+    const index = listenDeck.findIndex(q => q.id === currentQuestionId || q.questionId === currentQuestionId);
+    if (index >= 0) {
+      listenIdx = index;
+      return true;
+    }
+  }
+  if (Number.isInteger(state.current_index)) {
+    listenIdx = state.current_index;
+    return true;
+  }
+  return false;
+}
+
 function startListen() {
   clearListenResumeState();
   stopListenTimer();
-  listenDeck = getPrioritizedDeck(questions, 'listen').map(q => ({
+  const sourceQuestions = (typeof isNAServerGameSessionActive === 'function' && isNAServerGameSessionActive())
+    ? [...questions]
+    : getPrioritizedDeck(questions, 'listen');
+  listenDeck = sourceQuestions.map(q => ({
     ...q,
     questionId: generateQuestionId(q)
   }));
-  if (settings.questionLimitEnabled) {
+  const serverSessionActive = typeof isNAServerGameSessionActive === 'function' && isNAServerGameSessionActive();
+  if (settings.questionLimitEnabled && !serverSessionActive) {
     listenDeck = listenDeck.slice(0, settings.questionLimit);
   }
   if (listenDeck.length === 0) {
     handleEmptyGameDeck('listen');
     return;
   }
-  listenIdx = 0;
-  listenHP = 100;
-  listenScore = 0;
-  listenCombo = 0;
-  listenCorrect = 0;
-  listenWrong = 0;
+  const serverState = typeof getNAServerGameState === 'function' && serverSessionActive
+    ? getNAServerGameState()
+    : null;
+  if (serverSessionActive && serverState?.game_over && !serverState.current_question) {
+    listenComplete();
+    return;
+  }
+  listenIdx = serverState?.game_type === 'listen' ? (serverState.current_index || 0) : 0;
+  syncListenIndexFromNAServerState();
+  listenHP = serverState?.game_type === 'listen' ? (serverState.hp ?? 100) : 100;
+  listenScore = serverState?.game_type === 'listen' ? (serverState.score || 0) : 0;
+  listenCombo = serverState?.game_type === 'listen' ? (serverState.combo || 0) : 0;
+  listenCorrect = serverState?.game_type === 'listen' ? (serverState.correct_count || 0) : 0;
+  listenWrong = serverState?.game_type === 'listen' ? (serverState.wrong_count || 0) : 0;
   showScreen('screen-listen');
   renderListen();
 }
@@ -119,16 +150,17 @@ function renderListen() {
 
   const q = listenDeck[listenIdx];
   listenQuestionStartTime = Date.now();
-  document.getElementById('listen-progress').textContent = `${listenIdx + 1} / ${listenDeck.length}`;
-  document.getElementById('listen-audio-status').textContent = '';
+  const serverState = typeof getNAServerGameState === 'function' && isNAServerGameSessionActive()
+    ? getNAServerGameState()
+    : null;
+  const progressIndex = serverState?.game_type === 'listen'
+    ? Math.min((serverState.current_index || 0) + 1, serverState.total || listenDeck.length)
+    : listenIdx + 1;
+  const progressTotal = serverState?.game_type === 'listen' ? (serverState.total || listenDeck.length) : listenDeck.length;
+  document.getElementById('listen-progress').textContent = `${progressIndex} / ${progressTotal}`;
+  document.getElementById('listen-audio-status').textContent = 'Click Play to hear the Japanese word.';
   document.getElementById('listen-explanation').classList.add('hidden');
   document.getElementById('listen-next').classList.add('hidden');
-  
-  const practiceBtn = document.getElementById('listen-practice-writing');
-  if (practiceBtn) {
-    practiceBtn.classList.add('hidden');
-    practiceBtn.classList.remove('practice-highlight');
-  }
   
   updateListenHUD();
   if (settings.quizTimerEnabled) {
@@ -140,17 +172,34 @@ function renderListen() {
   const choices = document.getElementById('listen-choices');
   choices.innerHTML = '';
 
-  const { options, correctIndex } = shuffleAnswerOptions(q);
+  const { options, correctIndex, originalIndexes } = shuffleAnswerOptions(q);
   options.forEach((answer, index) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'choice-btn listen-choice-btn';
     btn.textContent = answer;
-    btn.onclick = () => answerListen(index, btn, q, correctIndex);
+    btn.onclick = () => answerListen(index, btn, q, correctIndex, originalIndexes);
     choices.appendChild(btn);
   });
 
-  playListenAudio(q.word);
+  if (serverState?.game_type === 'listen' && serverState.current_answered && serverState.current_answer) {
+    renderServerAnsweredChoices({
+      buttons: choices.querySelectorAll('.listen-choice-btn'),
+      answer: serverState.current_answer,
+      originalIndexes,
+      explanationEl: document.getElementById('listen-explanation'),
+      explanationText: q.ex || q.translation || 'No explanation available.',
+      nextBtn: document.getElementById('listen-next'),
+    });
+  }
+
+}
+
+function selectJapaneseVoice(voices) {
+  if (!Array.isArray(voices)) return null;
+  return voices.find(voice => /^ja([-_]|$)/i.test(voice.lang || ''))
+    || voices.find(voice => /japanese|nihongo|日本/i.test(voice.name || ''))
+    || null;
 }
 
 function playListenAudio(text) {
@@ -170,6 +219,8 @@ function playListenAudio(text) {
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'ja-JP';
+  const voice = selectJapaneseVoice(window.speechSynthesis.getVoices?.());
+  if (voice) utterance.voice = voice;
   utterance.rate = 0.9;
   utterance.onstart = () => {
     status.textContent = '🔊 Playing audio...';
@@ -177,8 +228,9 @@ function playListenAudio(text) {
   utterance.onend = () => {
     status.textContent = 'Listen to the Japanese word, then choose the correct reading.';
   };
-  utterance.onerror = () => {
-    status.textContent = '❌ Audio playback failed.';
+  utterance.onerror = (event) => {
+    const detail = event?.error ? ` (${event.error})` : '';
+    status.textContent = `❌ Audio playback failed${detail}. Click Play again or check browser TTS voices.`;
   };
   window.speechSynthesis.speak(utterance);
 }
@@ -189,22 +241,62 @@ function replayListenAudio() {
   playListenAudio(q.word);
 }
 
-function answerListen(choice, btn, q, correctIndex) {
+async function answerListen(choice, btn, q, correctIndex, originalIndexes = null) {
   stopListenTimer();
   const responseTime = Date.now() - listenQuestionStartTime;
   const buttons = document.querySelectorAll('.listen-choice-btn');
   buttons.forEach(b => b.disabled = true);
 
-  const isCorrect = choice === correctIndex;
+  let isCorrect = choice === correctIndex;
+  let serverChecked = false;
+  const shouldCheckOnServer = typeof isNAServerGameSessionActive === 'function' && isNAServerGameSessionActive();
+    if (shouldCheckOnServer && typeof submitGameAnswerOnNAServer === 'function') {
+      try {
+        const answerIndex = Array.isArray(originalIndexes) ? originalIndexes[choice] : choice;
+        if (typeof setAnswerButtonLoading === 'function') setAnswerButtonLoading(btn, true);
+        const result = await submitGameAnswerOnNAServer(q.id || q.questionId, answerIndex, responseTime, 'listen');
+        if (result.sync_required) {
+          syncListenIndexFromNAServerState();
+          renderListen();
+          showToast('Game session synced. Please answer the current question.', 'info');
+          return;
+        }
+        isCorrect = !!result.correct;
+        const serverCorrectIndex = result.correct_index;
+        correctIndex = Array.isArray(originalIndexes) ? originalIndexes.indexOf(serverCorrectIndex) : serverCorrectIndex;
+        q.c = serverCorrectIndex;
+        listenHP = typeof result.hp === 'number' ? result.hp : listenHP;
+        listenScore = typeof result.score === 'number' ? result.score : listenScore;
+        listenCombo = typeof result.combo === 'number' ? result.combo : listenCombo;
+        listenCorrect = typeof result.correct_count === 'number' ? result.correct_count : listenCorrect;
+        listenWrong = typeof result.wrong_count === 'number' ? result.wrong_count : listenWrong;
+        serverChecked = true;
+      } catch (error) {
+        if (typeof setAnswerButtonLoading === 'function') setAnswerButtonLoading(btn, false);
+        buttons.forEach(b => b.disabled = false);
+        showToast(`Answer check failed: ${error.message}`, 'err');
+        return;
+      } finally {
+        if (typeof setAnswerButtonLoading === 'function') setAnswerButtonLoading(btn, false);
+      }
+  } else if ((q.c === undefined || q.c === null) && typeof submitGameAnswerOnNAServer === 'function') {
+    buttons.forEach(b => b.disabled = false);
+    showToast('Answer check requires an active NAServer game session', 'err');
+    return;
+  }
   let cooldownPrompted = false;
-  if (isCorrect) {
-    btn.classList.add('correct');
-    listenCombo++;
-    listenCorrect++;
-    const points = Math.floor(BASE_XP_REWARD * Math.max(1, listenCombo) * 1.5);
-    listenScore += points;
-    playerEXP += points;
-    updateQuestionStats(listenDeck[listenIdx].questionId, 'listen', true, responseTime);
+    if (isCorrect) {
+      btn.classList.add('correct');
+      if (!serverChecked) {
+        listenCombo++;
+        listenCorrect++;
+      }
+      const points = Math.floor(BASE_XP_REWARD * Math.max(1, listenCombo) * 1.5);
+      if (!serverChecked) {
+        listenScore += points;
+        playerEXP += points;
+      }
+    if (!serverChecked) updateQuestionStats(listenDeck[listenIdx].questionId, 'listen', true, responseTime);
     cooldownPrompted = maybeApplyFastCorrectCooldown(listenDeck[listenIdx].questionId, 'listen', responseTime, (applied) => {
       if (applied && listenIdx < listenDeck.length) {
         nextListen();
@@ -214,28 +306,22 @@ function answerListen(choice, btn, q, correctIndex) {
     });
     showToast(`✅ Correct! +${points} EXP`, 'ok');
   } else {
-    btn.classList.add('wrong');
-    if (!settings.disableGameOver) {
-      listenHP = Math.max(0, listenHP - 20);
-    }
-    listenCombo = 0;
-    listenWrong++;
-    updateQuestionStats(listenDeck[listenIdx].questionId, 'listen', false, responseTime);
+      btn.classList.add('wrong');
+      if (!settings.disableGameOver) {
+        if (!serverChecked) listenHP = Math.max(0, listenHP - 20);
+      }
+      if (!serverChecked) {
+        listenCombo = 0;
+        listenWrong++;
+      }
+      if (serverChecked) updateListenHUD();
+    if (!serverChecked) updateQuestionStats(listenDeck[listenIdx].questionId, 'listen', false, responseTime);
     showToast('❌ Wrong answer!', 'err');
     document.getElementById('screen-listen').classList.add('shake');
     setTimeout(() => document.getElementById('screen-listen').classList.remove('shake'), 400);
-    
-    const practiceBtn = document.getElementById('listen-practice-writing');
-    if (practiceBtn) {
-      practiceBtn.dataset.word = q.word;
-      practiceBtn.dataset.romaji = q.romaji;
-      practiceBtn.dataset.translation = q.translation;
-      practiceBtn.classList.remove('hidden');
-      practiceBtn.classList.add('practice-highlight');
-    }
   }
 
-  const correctButton = buttons[correctIndex];
+  const correctButton = correctIndex !== null ? buttons[correctIndex] : null;
   if (correctButton) correctButton.classList.add('correct');
 
   const explanation = document.getElementById('listen-explanation');
@@ -337,8 +423,28 @@ function handleListenTimeout() {
   }, 900);
 }
 
-function nextListen() {
-  listenIdx++;
+async function nextListen() {
+  if (typeof isNAServerGameSessionActive === 'function' && isNAServerGameSessionActive()) {
+    if (typeof nextServerGameQuestion !== 'function') {
+      showToast('NAServer next question API is not available', 'err');
+      return;
+    }
+    try {
+      const data = await nextServerGameQuestion('listen');
+      const state = data.state || data || {};
+      if (state.game_over || !state.current_question) {
+        listenComplete();
+        return;
+      }
+      startListen();
+    } catch (error) {
+      showToast(`Next question failed: ${error.message}`, 'err');
+    }
+    return;
+  }
+  if (!syncListenIndexFromNAServerState()) {
+    listenIdx++;
+  }
   if (listenIdx < listenDeck.length) {
     renderListen();
   } else {

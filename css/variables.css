@@ -23,8 +23,8 @@
   --glow-b:    0 0 12px rgba(10,132,255,.7);
   --glow-accent: 0 0 20px var(--accent-glow);
   --accent-glow: rgba(255, 45, 85, 0.5);
-  --font-px:   'Press Start 2P', monospace;
-  --font-jp:   'Noto Sans JP', sans-serif;
+  --font-px:   'Press Start 2P', 'Noto Sans JP', monospace;
+  --font-jp:   'Noto Sans JP', 'Yu Gothic', 'Meiryo', sans-serif;
   --radius:    4px;
   --radius-sm: 4px;
   --radius-md: 8px;

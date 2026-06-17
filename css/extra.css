@@ -720,8 +720,8 @@
 
 /* ─── Dashboard UI refresh ─────────────────────── */
 :root {
-  --font-px: "Segoe UI", Arial, sans-serif;
-  --font-jp: "Segoe UI", Arial, sans-serif;
+  --font-px: 'Press Start 2P', 'Noto Sans JP', monospace;
+  --font-jp: 'Noto Sans JP', 'Yu Gothic', 'Meiryo', sans-serif;
   --dashboard-bg: rgba(246, 248, 252, 0.96);
   --dashboard-card: rgba(255, 255, 255, 0.98);
   --dashboard-border: rgba(148, 163, 184, 0.34);
@@ -736,7 +736,7 @@ button,
 input,
 select,
 textarea {
-  font-family: "Segoe UI", Arial, sans-serif;
+  font-family: var(--font-jp);
   letter-spacing: 0;
 }
 
@@ -847,7 +847,6 @@ textarea {
 
 .screen-data .action-btn,
 .screen-data .toggle-config-btn,
-.screen-data .back-btn,
 #naserver-auth-modal .action-btn {
   min-height: 40px;
   padding: 10px 14px;
@@ -863,7 +862,6 @@ textarea {
 
 .screen-data .action-btn:hover,
 .screen-data .toggle-config-btn:hover,
-.screen-data .back-btn:hover,
 #naserver-auth-modal .action-btn:hover {
   filter: brightness(0.96);
   transform: none;
@@ -1053,8 +1051,7 @@ textarea {
   .screen-data #question-set-selector,
   .screen-data #storage-provider-mode,
   .screen-data .action-btn,
-  .screen-data .toggle-config-btn,
-  .screen-data .back-btn {
+  .screen-data .toggle-config-btn {
     width: 100%;
     max-width: none;
   }
@@ -1646,6 +1643,83 @@ body .screen-data .import-input {
   text-align: right;
 }
 
+/* ─── Readability pass: Japanese-friendly font and larger small text. */
+.choice-btn,
+.explanation-box,
+.setting-row,
+.setting-select,
+.status-msg,
+.data-table th,
+.data-table td,
+.stats-table th,
+.stats-table td,
+.session-history-type,
+.session-history-date,
+.screen-data .action-btn,
+.screen-data .toggle-config-btn,
+.screen-data .page-btn,
+.screen-data .page-info {
+  font-family: var(--font-jp);
+}
+
+.hud-back,
+.hud-title,
+.hud-stats,
+.progress-info,
+.next-btn,
+.back-btn,
+.flash-btn,
+.page-btn,
+.page-info,
+.stats-section-title,
+.stats-summary-label,
+.stats-accuracy-text,
+.stats-table th,
+.mastery-label,
+.weight-label,
+.weight-value,
+.canvas-btn,
+.hint-btn,
+.write-hint-label {
+  font-size: max(11px, 1em);
+}
+
+.panel-title,
+.setting-block h3 {
+  font-size: 14px;
+}
+
+.setting-row,
+.setting-select,
+.form-group input,
+.form-group label,
+.status-msg,
+.screen-data .action-btn,
+.screen-data .toggle-config-btn,
+.screen-data #question-set-selector,
+.screen-data #storage-provider-mode,
+.screen-data .import-input,
+.screen-data .data-table th,
+.screen-data .data-table td {
+  font-size: 15px;
+}
+
+#listen-instruction #listen-audio-status,
+.listen-timer,
+.stats-table td small,
+.session-history-date,
+.session-history-accuracy,
+.weight-desc,
+.setting-desc {
+  font-size: 13px;
+}
+
+.stats-summary-label,
+.mastery-label,
+.stats-table th {
+  font-size: 12px;
+}
+
 /* ─── Settings-theme lock: final cascade ───────── */
 body .screen-data .data-dashboard-panel {
   background: var(--panel);
@@ -1821,7 +1895,6 @@ body .naserver-backup-percent {
 
 .screen-data .action-btn,
 .screen-data .toggle-config-btn,
-.screen-data .back-btn,
 #naserver-auth-modal .action-btn {
   min-height: 42px;
   padding: 12px 16px;
@@ -1837,7 +1910,6 @@ body .naserver-backup-percent {
 
 .screen-data .action-btn:hover,
 .screen-data .toggle-config-btn:hover,
-.screen-data .back-btn:hover,
 #naserver-auth-modal .action-btn:hover {
   filter: brightness(1.08);
   transform: none;
@@ -2035,8 +2107,7 @@ body .naserver-backup-percent {
   .screen-data #question-set-selector,
   .screen-data #storage-provider-mode,
   .screen-data .action-btn,
-  .screen-data .toggle-config-btn,
-  .screen-data .back-btn {
+  .screen-data .toggle-config-btn {
     width: 100%;
     max-width: none;
   }
@@ -2238,8 +2309,7 @@ body .naserver-backup-percent {
 }
 
 .screen-data .action-btn,
-.screen-data .toggle-config-btn,
-.screen-data .back-btn {
+.screen-data .toggle-config-btn {
   min-height: 40px;
   padding: 10px 14px;
   font-size: 14px;
@@ -2281,8 +2351,7 @@ body .naserver-backup-percent {
   .screen-data #question-set-selector,
   .screen-data #storage-provider-mode,
   .screen-data .action-btn,
-  .screen-data .toggle-config-btn,
-  .screen-data .back-btn {
+  .screen-data .toggle-config-btn {
     width: 100%;
     max-width: none;
   }
@@ -2330,4 +2399,32 @@ body .naserver-backup-percent {
   font-size: 13px;
   font-weight: 600;
   text-align: right;
+}
+.choice-btn.answer-loading,
+.listen-choice-btn.answer-loading {
+  position: relative;
+  pointer-events: none;
+}
+
+body.answer-check-loading,
+body.answer-check-loading * {
+  cursor: wait !important;
+}
+
+.answer-loading-spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-left: 0.6em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  vertical-align: -0.15em;
+  animation: answer-spinner-spin 0.7s linear infinite;
+}
+
+@keyframes answer-spinner-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

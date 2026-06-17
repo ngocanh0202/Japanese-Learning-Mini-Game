@@ -135,9 +135,13 @@ this.saveQuizResumeState = saveQuizResumeState;
 this.loadQuizResumeState = loadQuizResumeState;
 this.clearQuizResumeState = clearQuizResumeState;
 this.resumeQuizFromState = resumeQuizFromState;
+this.nextQuiz = nextQuiz;
 this.recordAbandonedSession = recordAbandonedSession;
 this.startGame = startGame;
+this.openGameResumeModal = openGameResumeModal;
+this.startFreshGame = startFreshGame;
 this.getSessionHistory = () => sessionHistory;
+this.getQuestions = () => questions;
 this.quizState = () => ({ quizDeck, quizIdx, quizHP, quizScore, quizCombo, quizCorrect, quizWrong });
 this.setQuizState = (state) => {
   quizDeck = state.deck || quizDeck;
@@ -258,10 +262,208 @@ function testStartGameShowsResumeModalWhenQuizResumeExists() {
   assert.strictEqual(context.elements['quiz-resume-modal'].classList.contains('hidden'), false);
 }
 
+async function testNextQuizUsesServerNextQuestionWhenSessionActive() {
+  const context = createContext();
+  let nextCalled = false;
+  let startedQuiz = false;
+  context.setQuizState({
+    deck: [
+      { id: 'q-1', questionId: 'q-1', word: 'one', q: 'One?', a: ['1'], c: 0 }
+    ],
+    idx: 0
+  });
+  context.isNAServerGameSessionActive = () => true;
+  context.nextServerGameQuestion = async () => {
+    nextCalled = true;
+    return {
+      state: {
+        game_type: 'quiz',
+        current_index: 1,
+        total: 2,
+        current_question: { id: 'q-2' }
+      }
+    };
+  };
+  context.startQuiz = () => {
+    startedQuiz = true;
+  };
+
+  await context.nextQuiz();
+
+  assert.strictEqual(nextCalled, true);
+  assert.strictEqual(startedQuiz, true);
+}
+
+async function testStartGameShowsServerResumeModalBeforeContinuing() {
+  const context = createContext();
+  let startedFresh = false;
+  context.setAppState({ questions: [{ id: 'q-1', word: 'one', q: 'One?', a: ['1'], c: 0 }] });
+  context.isNAServerBusy = () => false;
+  context.isNAServerConfigured = () => true;
+  context.setNAServerBusy = () => {};
+  context.resumeServerGame = async () => ({
+    session_id: 'session-server',
+    game_type: 'quiz',
+    questions: [{ id: 'q-1', word: 'one', q: 'One?', a: ['1'], c: 0 }],
+    state: { game_type: 'quiz', current_index: 0, current_question: { id: 'q-1' } }
+  });
+  context.startServerGame = async () => {
+    throw new Error('restart should not be called before user confirms');
+  };
+  context.startFreshGame = () => {
+    startedFresh = true;
+  };
+
+  await context.startGame('quiz');
+
+  assert.strictEqual(context.elements['quiz-resume-modal'].classList.contains('hidden'), false);
+  assert.strictEqual(startedFresh, false);
+}
+
+async function testStartGameCreatesServerSessionWhenNoResumeExists() {
+  const context = createContext();
+  let startCalls = 0;
+  let startedFresh = false;
+  context.setAppState({ questions: [] });
+  context.isNAServerBusy = () => false;
+  context.isNAServerConfigured = () => true;
+  context.setNAServerBusy = () => {};
+  context.resumeServerGame = async () => {
+    throw new Error('No active session');
+  };
+  context.startServerGame = async () => {
+    startCalls++;
+    context.setAppState({ questions: [{ id: 'q-new', word: 'new', q: 'New?', a: ['new'], c: 0 }] });
+    return {
+      session_id: 'session-new',
+      game_type: 'quiz',
+      state: { game_type: 'quiz', current_index: 0, current_question: { id: 'q-new' } }
+    };
+  };
+  context.startFreshGame = () => {
+    startedFresh = true;
+  };
+
+  await context.startGame('quiz');
+
+  assert.strictEqual(startCalls, 1);
+  assert.strictEqual(startedFresh, true);
+  assert.strictEqual(context.document.getElementById('quiz-resume-modal').classList.contains('hidden'), true);
+}
+
+async function testStartGameDoesNotStartOverWhenResumeCheckFailsUnexpectedly() {
+  const context = createContext();
+  let startCalls = 0;
+  let toastMessage = '';
+  context.setAppState({ questions: [{ id: 'q-local', word: 'local', q: 'Local?', a: ['local'], c: 0 }] });
+  context.isNAServerBusy = () => false;
+  context.isNAServerConfigured = () => true;
+  context.setNAServerBusy = () => {};
+  context.showToast = (message) => {
+    toastMessage = message;
+  };
+  context.resumeServerGame = async () => {
+    throw new Error('Database unavailable');
+  };
+  context.startServerGame = async () => {
+    startCalls++;
+  };
+
+  await context.startGame('quiz');
+
+  assert.strictEqual(startCalls, 0);
+  assert.strictEqual(toastMessage.includes('Database unavailable'), true);
+}
+
+async function testServerResumeContinueRefreshesSessionWhenClicked() {
+  const context = createContext();
+  let resumeCalls = 0;
+  let startedFresh = false;
+  context.setAppState({ questions: [{ id: 'q-old', word: 'old', q: 'Old?', a: ['old'], c: 0 }] });
+  context.isNAServerBusy = () => false;
+  context.isNAServerConfigured = () => true;
+  context.setNAServerBusy = () => {};
+  context.resumeServerGame = async () => {
+    resumeCalls++;
+    context.setAppState({
+      questions: [{
+        id: resumeCalls === 1 ? 'q-old' : 'q-new',
+        word: resumeCalls === 1 ? 'old' : 'new',
+        q: 'Question?',
+        a: ['answer'],
+        c: 0
+      }]
+    });
+    return {
+      session_id: resumeCalls === 1 ? 'session-old' : 'session-new',
+      game_type: 'quiz',
+      questions: context.getQuestions(),
+      state: {
+        game_type: 'quiz',
+        current_index: 0,
+        current_question: { id: resumeCalls === 1 ? 'q-old' : 'q-new' }
+      }
+    };
+  };
+  context.startFreshGame = () => {
+    startedFresh = true;
+  };
+
+  await context.startGame('quiz');
+  await context.elements['quiz-resume-continue'].onclick();
+
+  assert.strictEqual(resumeCalls, 2);
+  assert.strictEqual(context.getQuestions()[0].id, 'q-new');
+  assert.strictEqual(startedFresh, true);
+}
+
+async function testServerResumeRestartClearsLocalResumeBeforeStartingNewSession() {
+  const context = createContext();
+  seedQuizInProgress(context);
+  context.saveQuizResumeState();
+  context.isNAServerBusy = () => false;
+  context.isNAServerConfigured = () => true;
+  context.setNAServerBusy = () => {};
+  context.resumeServerGame = async () => {
+    context.setAppState({ questions: [{ id: 'q-old', word: 'old', q: 'Old?', a: ['old'], c: 0 }] });
+    return {
+      session_id: 'session-old',
+      game_type: 'quiz',
+      questions: context.getQuestions(),
+      state: { game_type: 'quiz', current_index: 0, current_question: { id: 'q-old' } }
+    };
+  };
+  context.startServerGame = async () => {
+    assert.strictEqual(context.localStorage.getItem('jq_resume_quiz'), null);
+    context.setAppState({ questions: [{ id: 'q-new', word: 'new', q: 'New?', a: ['new'], c: 0 }] });
+    return {
+      session_id: 'session-new',
+      game_type: 'quiz',
+      questions: context.getQuestions(),
+      state: { game_type: 'quiz', current_index: 0, current_question: { id: 'q-new' } }
+    };
+  };
+  context.startFreshGame = () => {};
+
+  await context.startGame('quiz');
+  await context.elements['quiz-resume-restart'].onclick();
+}
+
 testSavesAndLoadsQuizResumeSnapshot();
 testResumeRestoresQuizGlobalsAndClearsSavedState();
 testDoesNotSaveResumeWhenQuizIsComplete();
 testRecordAbandonedSessionAddsStatusWithoutDuplicates();
 testStartGameShowsResumeModalWhenQuizResumeExists();
-
-console.log('quiz resume tests passed');
+Promise.resolve()
+  .then(testStartGameShowsServerResumeModalBeforeContinuing)
+  .then(testStartGameCreatesServerSessionWhenNoResumeExists)
+  .then(testStartGameDoesNotStartOverWhenResumeCheckFailsUnexpectedly)
+  .then(testNextQuizUsesServerNextQuestionWhenSessionActive)
+  .then(testServerResumeContinueRefreshesSessionWhenClicked)
+  .then(testServerResumeRestartClearsLocalResumeBeforeStartingNewSession)
+  .then(() => {
+  console.log('quiz resume tests passed');
+}).catch(error => {
+  console.error(error);
+  process.exit(1);
+});

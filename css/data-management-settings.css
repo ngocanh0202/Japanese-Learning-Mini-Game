@@ -109,7 +109,6 @@
 
 .screen-data .action-btn,
 .screen-data .toggle-config-btn,
-.screen-data .back-btn,
 #naserver-auth-modal .action-btn {
   min-height: 42px;
   padding: 12px 16px;
@@ -134,6 +133,43 @@
   color: #fff;
   background: var(--accent);
   border-color: var(--accent);
+}
+
+.screen-data .btn-set-new,
+.screen-data .btn-green {
+  color: #07140c;
+  background: #7ee787;
+  border-color: #7ee787;
+}
+
+.screen-data .btn-set-rename {
+  color: #fff;
+  background: #0a84ff;
+  border-color: #0a84ff;
+}
+
+.screen-data .btn-set-delete {
+  color: #fff;
+  background: #ff453a;
+  border-color: #ff453a;
+}
+
+.screen-data .btn-set-share {
+  color: #fff;
+  background: #6e5cff;
+  border-color: #6e5cff;
+}
+
+.screen-data .btn-set-pull {
+  color: #07131f;
+  background: #64d2ff;
+  border-color: #64d2ff;
+}
+
+.screen-data .btn-set-push {
+  color: #161103;
+  background: #ffd60a;
+  border-color: #ffd60a;
 }
 
 .screen-data .toggle-config-btn {
@@ -225,6 +261,112 @@
   font-size: 15px;
 }
 
+.screen-data .question-search-row {
+  margin: 14px 0 16px;
+}
+
+.source-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.source-server {
+  color: #c7f9ff;
+  background: rgba(10, 132, 255, 0.16);
+  border-color: rgba(10, 132, 255, 0.48);
+}
+
+.source-local {
+  color: #d9f7c6;
+  background: rgba(48, 209, 88, 0.14);
+  border-color: rgba(48, 209, 88, 0.42);
+}
+
+.question-edit-box,
+.share-set-box {
+  width: min(920px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+}
+
+.question-edit-box,
+.question-edit-box input,
+.question-edit-box textarea,
+.question-edit-box label {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.question-edit-grid,
+.share-toolbar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.question-edit-wide {
+  grid-column: 1 / -1;
+}
+
+.question-edit-box input,
+.question-edit-box textarea,
+.share-set-box input,
+.share-set-box select {
+  width: 100%;
+  min-height: 44px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 15px;
+}
+
+.question-edit-box input,
+.share-set-box input,
+.share-set-box select {
+  padding: 0 14px;
+}
+
+.compact-textarea {
+  min-height: 104px;
+  padding: 12px 14px;
+  resize: vertical;
+}
+
+#question-edit-answers {
+  min-height: 148px;
+  line-height: 1.55;
+}
+
+.question-list-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.confirm-modal-box {
+  width: min(460px, calc(100vw - 32px));
+}
+
+.confirm-message {
+  margin: 0;
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.55;
+  white-space: pre-line;
+}
+
+.share-user-list {
+  margin-top: 16px;
+}
+
 #naserver-auth-modal .modal-box,
 .naserver-backup-panel {
   background: var(--panel);
@@ -307,8 +449,7 @@
   .screen-data #question-set-selector,
   .screen-data #storage-provider-mode,
   .screen-data .action-btn,
-  .screen-data .toggle-config-btn,
-  .screen-data .back-btn {
+  .screen-data .toggle-config-btn {
     width: 100%;
     max-width: none;
   }
@@ -317,7 +458,21 @@
     grid-template-columns: 1fr;
   }
 
+  .question-edit-grid,
+  .share-toolbar {
+    grid-template-columns: 1fr;
+  }
+
   .screen-data .panel-title {
     font-size: 22px;
   }
+}
+/* Keep account forms readable instead of using pixel display text. */
+#naserver-auth-modal,
+#naserver-auth-modal .modal-box,
+#naserver-auth-modal .modal-title,
+#naserver-auth-modal label,
+#naserver-auth-modal input,
+#naserver-auth-modal .action-btn {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }

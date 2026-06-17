@@ -54,7 +54,35 @@ function testShuffleMutatesAndReturnsSameArrayWithFisherYatesSwaps() {
   assert.deepStrictEqual(result, ['c', 'd', 'b', 'a']);
 }
 
+function testShowScreenBlocksStatsWhenNAServerLoggedOut() {
+  const context = createContext();
+  const calls = [];
+  const screens = [
+    { classList: { remove() {}, add() {} }, style: {} },
+    { classList: { remove() {}, add() {} }, style: {} }
+  ];
+  context.document.querySelectorAll = selector => selector === '.screen' ? screens : [];
+  context.document.getElementById = id => {
+    if (id === 'screen-menu' || id === 'screen-stats') {
+      return { classList: { add() {}, remove() {} }, style: {} };
+    }
+    return { textContent: '', style: {}, classList: { add() {}, remove() {} } };
+  };
+  context.isNAServerConfigured = () => false;
+  context.showToast = (message, type) => calls.push({ message, type });
+  context.openNAServerAuthModal = mode => calls.push({ modal: mode });
+
+  vm.runInContext("currentScreen = 'screen-menu'; showScreen('screen-stats')", context);
+
+  assert.strictEqual(vm.runInContext('currentScreen', context), 'screen-menu');
+  assert.deepStrictEqual(calls, [
+    { message: 'Please login to NAServer before opening Learning Stats.', type: 'err' },
+    { modal: 'login' }
+  ]);
+}
+
 testEscapeHtmlHandlesUnsafeAndEmptyValues();
 testShuffleMutatesAndReturnsSameArrayWithFisherYatesSwaps();
+testShowScreenBlocksStatsWhenNAServerLoggedOut();
 
 console.log('main-utils tests passed');

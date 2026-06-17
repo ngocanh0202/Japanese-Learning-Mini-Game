@@ -3,21 +3,21 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'data-manager.js'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'naserver-api.js'), 'utf8');
+const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 
-const storage = new Map([
-  ['jq_naserver_config', JSON.stringify({ baseUrl: 'http://api.test', token: 'abc' })]
-]);
-
+const storage = new Map();
 const fields = {
-  'firebase-project-id': { value: 'firebase-project' },
-  'firebase-api-key': { value: 'api-key' },
-  'firebase-auth-domain': { value: 'firebase.test' },
-  'firebase-bucket': { value: 'bucket' },
-  'firebase-messaging-sender-id': { value: 'sender' },
-  'firebase-app-id': { value: 'app' },
-  'firebase-measurement-id': { value: 'measure' },
-  'firebase-config-panel': { classList: { add() {} } }
+  'storage-provider-mode': { value: 'naserver' },
+  'naserver-email': { value: '', textContent: '', classList: { add() {}, remove() {}, toggle() {} } },
+  'naserver-password': { value: '', textContent: '', classList: { add() {}, remove() {}, toggle() {} } },
+  'naserver-password-confirm': { value: '', textContent: '', classList: { add() {}, remove() {}, toggle() {} } },
+  'naserver-account-status': { textContent: '', classList: { add() {}, remove() {}, toggle() {} } },
+  'naserver-auth-panel': { classList: { add() {}, remove() {}, toggle() {} } },
+  'btn-naserver-login-open': { classList: { add() {}, remove() {}, toggle() {} } },
+  'btn-naserver-register-open': { classList: { add() {}, remove() {}, toggle() {} } },
+  'btn-naserver-logout': { classList: { add() {}, remove() {}, toggle() {} } },
+  'naserver-sync-actions': { classList: { add() {}, remove() {}, toggle() {} } }
 };
 
 const context = {
@@ -37,34 +37,33 @@ const context = {
     getElementById(id) {
       return fields[id] || { value: '', classList: { add() {}, remove() {}, toggle() {} } };
     },
-    createElement() {
-      return { click() {}, remove() {} };
+    querySelectorAll() {
+      return [];
     },
-    body: { appendChild() {} }
+    querySelector() {
+      return null;
+    },
   },
-  Blob: function Blob() {},
-  URL: { createObjectURL: () => '', revokeObjectURL() {} },
-  ensureFirebaseSdkLoaded: async () => true,
-  initializeFirebase: () => true,
   showToast() {},
-  showFirebaseSetsButton() {},
-  SAMPLE_DATA: [],
-  questions: [],
-  questionSets: [],
-  dataPage: 1,
-  importEditIndex: null,
-  activeSetId: null,
-  firebase: { firestore: { FieldValue: { serverTimestamp: () => null } } }
+  setTimeout() {},
 };
 
 vm.createContext(context);
 vm.runInContext(source, context);
 
 (async () => {
-  await vm.runInContext('saveFirebaseConfig()', context);
+  const firebaseConfig = vm.runInContext("normalizeNAServerConfig({ provider: 'firebase', baseUrl: 'http://api.test', token: 'abc' })", context);
+  assert.strictEqual(firebaseConfig.provider, 'naserver');
 
-  assert.strictEqual(storage.has('jq_naserver_config'), false);
-  assert.strictEqual(JSON.parse(storage.get('jq_firebase_config')).projectId, 'firebase-project');
+  vm.runInContext("setProviderMode('firebase')", context);
+  assert.strictEqual(JSON.parse(storage.get('jq_naserver_config')).provider, 'naserver');
+
+  assert.strictEqual(html.includes('firebase-config-panel'), false);
+  assert.strictEqual(html.includes('btn-firebase-sets'), false);
+  assert.strictEqual(html.includes('js/firebase-config.js'), false);
+  assert.strictEqual(html.includes('btn-backup'), false);
+  assert.strictEqual(html.includes('backupQuestionSet()'), false);
+  assert.strictEqual(html.includes('Custom Firebase'), false);
 
   console.log('provider config exclusivity tests passed');
 })().catch(error => {
